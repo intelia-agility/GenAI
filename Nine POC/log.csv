@@ -1,0 +1,1118 @@
+0, 120, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 0,\n    \"endOffset\": 16,\n    \"chapterSummary\": \"A woman in a sparkling dress walks down a corridor.\"\n  },\n  {\n    \"startOffset\": 16,\n    \"endOffset\": 32,\n    \"chapterSummary\": \"Madeleine West is an Australian actress. She reveals that she was not defended as a child and now has the opportunity to defend herself.\"\n  },\n  {\n    \"startOffset\": 32,\n    \"endOffset\": 48,\n    \"chapterSummary\": \"Madeleine West talks about her abuser, Peter White, a plumber in Woodend, a town north of Melbourne.\"\n  },\n  {\n    \"startOffset\": 48,\n    \"endOffset\": 64,\n    \"chapterSummary\": \"Detective Scott Tudnem is a Victorian police officer. He talks about the risk he took to help Madeleine West confront her abuser.\"\n  },\n  {\n    \"startOffset\": 64,\n    \"endOffset\": 80,\n    \"chapterSummary\": \"Madeleine West says the abuse started when she was 4.5 years old.\"\n  },\n  {\n    \"startOffset\": 80,\n    \"endOffset\": 96,\n    \"chapterSummary\": \"Madeleine West talks about how she felt when the abuse happened and how it affected her childhood.\"\n  },\n  {\n    \"startOffset\": 96,\n    \"endOffset\": 112,\n    \"chapterSummary\": \"Madeleine West and Amanda Lee, childhood friends who were both abused by Peter White, both went to police independently. \"\n  },\n  {\n    \"startOffset\": 112,\n    \"endOffset\": 120,\n    \"chapterSummary\": \"Detective Scott Tudnem was able to connect the dots and build a case against Peter White.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.170369923
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.227297768
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.190573335
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.224905506
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.538285494
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.40857172
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.353874624
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.40245083
+  }
+}
+usage_metadata {
+  prompt_token_count: 851417
+  candidates_token_count: 433
+  total_token_count: 851850
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 0 seconds to 120 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 120 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+120, 240, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 120,\n    \"endOffset\": 136,\n    \"chapterSummary\": \"A woman is talking about the most remarkable things she has ever seen. A woman is talking about the most remarkable things she has ever seen.  \"\n  },\n  {\n    \"startOffset\": 136,\n    \"endOffset\": 152,\n    \"chapterSummary\": \"The woman says it was one of the most remarkable things she had ever seen.  The woman says it was one of the most remarkable things she had ever seen.  \"\n  },\n  {\n    \"startOffset\": 152,\n    \"endOffset\": 168,\n    \"chapterSummary\": \"She decided to confront the man she says raped her. She decided to confront the man she says raped her.  \"\n  },\n  {\n    \"startOffset\": 168,\n    \"endOffset\": 184,\n    \"chapterSummary\": \"A detective convinced the woman to wear a hidden recording device. A detective convinced the woman to wear a hidden recording device. \"\n  },\n  {\n    \"startOffset\": 184,\n    \"endOffset\": 200,\n    \"chapterSummary\": \"The woman talks about the man\'s face dropping when he realized he was being confronted.  The woman talks about the man\'s face dropping when he realized he was being confronted.  \"\n  },\n  {\n    \"startOffset\": 200,\n    \"endOffset\": 216,\n    \"chapterSummary\": \"The woman says the man had been waiting for this day to happen.  The woman says the man had been waiting for this day to happen.  \"\n  },\n  {\n    \"startOffset\": 216,\n    \"endOffset\": 232,\n    \"chapterSummary\": \"The woman talks about what it was like to be raped as a little girl. The woman talks about what it was like to be raped as a little girl. \"\n  },\n  {\n    \"startOffset\": 232,\n    \"endOffset\": 240,\n    \"chapterSummary\": \"The woman says she has no idea how many times she was raped. The woman says she has no idea how many times she was raped. \"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.176529601
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.240953162
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.204341903
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.247441471
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.542984426
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.422921658
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.390417755
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.44613269
+  }
+}
+usage_metadata {
+  prompt_token_count: 851419
+  candidates_token_count: 534
+  total_token_count: 851953
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 120 seconds to 240 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 240 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+240, 360, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 240,\n    \"endOffset\": 256,\n    \"chapterSummary\": \"White was considered a pillar of society, everyone loved him, and this gave him a get-out-of-jail-free card.\"\n  },\n  {\n    \"startOffset\": 256,\n    \"endOffset\": 272,\n    \"chapterSummary\": \"White took advantage of Madeline in the most grotesque way, and she suffered the most serious and sustained abuse.\"\n  },\n  {\n    \"startOffset\": 272,\n    \"endOffset\": 288,\n    \"chapterSummary\": \"Madeline recalls a terrifying memory from her childhood that left her feeling lost, confused, and ashamed.\"\n  },\n  {\n    \"startOffset\": 288,\n    \"endOffset\": 304,\n    \"chapterSummary\": \"Madeline\'s parents were young and unaware of what was happening to her. They had no idea how to help. \"\n  },\n  {\n    \"startOffset\": 304,\n    \"endOffset\": 320,\n    \"chapterSummary\": \"Madeline went to the police after 30 years, but police at the time had no information to make a case against White. \"\n  },\n  {\n    \"startOffset\": 320,\n    \"endOffset\": 336,\n    \"chapterSummary\": \"White was a respected plumber in the small Victorian town of Woodend. His house was a magnet for kids. \"\n  },\n  {\n    \"startOffset\": 336,\n    \"endOffset\": 352,\n    \"chapterSummary\": \"Detective Scott Tuddenham took the risk to investigate White. He had seen many vile offenders, but this case was unique. \"\n  },\n  {\n    \"startOffset\": 352,\n    \"endOffset\": 360,\n    \"chapterSummary\": \"Madeline and other victims who were abused by White independently went to the police, with no knowledge of each other. \"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.176245868
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.23370637
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.189221263
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.230399877
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.544438124
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.414543271
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.353651404
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.408807695
+  }
+}
+usage_metadata {
+  prompt_token_count: 851419
+  candidates_token_count: 483
+  total_token_count: 851902
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 240 seconds to 360 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 360 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+360, 480, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 360,\n    \"endOffset\": 376,\n    \"chapterSummary\": \"A woman who was a childhood friend of Madeleine\'s talks about the abuse she went through and how she blames herself for not speaking up earlier. She also talks about how difficult it was for her to let go of that guilt.\"\n  },\n  {\n    \"startOffset\": 376,\n    \"endOffset\": 392,\n    \"chapterSummary\": \"The detective who worked tirelessly on the case talks about how he knew from the start that it wasn\'t an ordinary case.\"\n  },\n  {\n    \"startOffset\": 392,\n    \"endOffset\": 408,\n    \"chapterSummary\": \"The detective talks about the nature of the crimes against Madeleine\'s abuser, Peter White.\"\n  },\n  {\n    \"startOffset\": 408,\n    \"endOffset\": 424,\n    \"chapterSummary\": \"Madeleine talks about the impact of the crimes against her by Peter White and the  shame and guilt she carries with her.\"\n  },\n  {\n    \"startOffset\": 424,\n    \"endOffset\": 440,\n    \"chapterSummary\": \"The detective talks about how he knew from Peter White\'s reaction that the crimes against Madeleine were not a one-off.\"\n  },\n  {\n    \"startOffset\": 440,\n    \"endOffset\": 456,\n    \"chapterSummary\": \"The detective talks about the importance of victims telling their stories and being authentic. The interviewee talks about how the detective disarmed her and made her feel safe to speak up.\"\n  },\n  {\n    \"startOffset\": 456,\n    \"endOffset\": 472,\n    \"chapterSummary\": \"The detective talks about how he felt intrigued by the crimes against Madeleine and how he knew there were more victims out there. The interviewee explains that her family was very young and could not put together a case against Peter White.\"\n  },\n  {\n    \"startOffset\": 472,\n    \"endOffset\": 480,\n    \"chapterSummary\": \"\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.16491954
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.224055439
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.189521074
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.22354652
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.527316511
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.397412091
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.34444344
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.396184951
+  }
+}
+usage_metadata {
+  prompt_token_count: 851419
+  candidates_token_count: 506
+  total_token_count: 851925
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 360 seconds to 480 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 480 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+480, 600, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 480,\n    \"endOffset\": 496,\n    \"chapterSummary\": \"A woman speaks about the shame of the abuse she suffered as a child.\"\n  },\n  {\n    \"startOffset\": 496,\n    \"endOffset\": 512,\n    \"chapterSummary\": \"She speaks about the abuse she experienced as a child and how it affected her and her family.\"\n  },\n  {\n    \"startOffset\": 512,\n    \"endOffset\": 528,\n    \"chapterSummary\": \"She describes how she was treated by her family and a man who was the perpetrator. She describes his demeanor and appearance.\"\n  },\n  {\n    \"startOffset\": 528,\n    \"endOffset\": 544,\n    \"chapterSummary\": \"She talks about how the abuser had a long leash to carry out his actions. She describes how she was treated by her family and how they reacted to her complaints.\"\n  },\n  {\n    \"startOffset\": 544,\n    \"endOffset\": 560,\n    \"chapterSummary\": \"She shares how the abuser treated her. She says that the abuser was known as a pillar of the community.\"\n  },\n  {\n    \"startOffset\": 560,\n    \"endOffset\": 576,\n    \"chapterSummary\": \"She says the abuser had a reputation in the community as a pillar of society, and his reputation helped him get away with his crimes.\"\n  },\n  {\n    \"startOffset\": 576,\n    \"endOffset\": 592,\n    \"chapterSummary\": \"She shares how the abuser acted. She says that the abuser often used children in a sick and twisted way.\"\n  },\n  {\n    \"startOffset\": 592,\n    \"endOffset\": 600,\n    \"chapterSummary\": \"The woman describes the abuse and how it affected her and her family.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.167763337
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.22592856
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.189821288
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.226612449
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.54534626
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.403684378
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.349976927
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.404154658
+  }
+}
+usage_metadata {
+  prompt_token_count: 851419
+  candidates_token_count: 464
+  total_token_count: 851883
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 480 seconds to 600 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 600 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+600, 720, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 600,\n    \"endOffset\": 616,\n    \"chapterSummary\": \"A woman, who had been abused, explains that she was just a child when it happened and that she is still working through the trauma. She said she could not bring herself to confront her abuser. \"\n  },\n  {\n    \"startOffset\": 616,\n    \"endOffset\": 632,\n    \"chapterSummary\": \"A detective explained he saw the perpetrator\'s true nature, and that the way he treated young children was particularly cruel. \"\n  },\n  {\n    \"startOffset\": 632,\n    \"endOffset\": 648,\n    \"chapterSummary\": \"The detective talks about the nature of the crimes and explains that he took the risk to wear a wire to catch the perpetrator in the act. \"\n  },\n  {\n    \"startOffset\": 648,\n    \"endOffset\": 664,\n    \"chapterSummary\": \"The detective says that he knew the perpetrator was waiting for this day to confront him about what had happened 30 to 40 years before.\"\n  },\n  {\n    \"startOffset\": 664,\n    \"endOffset\": 680,\n    \"chapterSummary\": \"The woman explains she went along with her abuser\'s game because she was young, and she knew she could not fight him. She also says that he asked them to dress up his penis and touch it as part of the abuse.\"\n  },\n  {\n    \"startOffset\": 680,\n    \"endOffset\": 696,\n    \"chapterSummary\": \"The detective explains that he was initially skeptical that this was more than a run of the mill case, and he was unsure of how to approach it.\"\n  },\n  {\n    \"startOffset\": 696,\n    \"endOffset\": 712,\n    \"chapterSummary\": \"The woman explains that her family was young when the abuse began and they did not know what to do. She also said that her abuser was very popular, and that this made him feel untouchable. \"\n  },\n  {\n    \"startOffset\": 712,\n    \"endOffset\": 720,\n    \"chapterSummary\": \"The detective said that he needed to collect evidence, and he did this by wearing a wire and recording his conversations. \"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.169680864
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.229535222
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.195901573
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.23196201
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.540014327
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.405743062
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.38393
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.435781419
+  }
+}
+usage_metadata {
+  prompt_token_count: 851419
+  candidates_token_count: 555
+  total_token_count: 851974
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 600 seconds to 720 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 720 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+720, 840, candidates {
+  finish_reason: PROHIBITED_CONTENT
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.175396785
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.232310146
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.191932783
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.225587174
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.551452935
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.406567425
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.376164705
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.426023066
+  }
+}
+usage_metadata {
+  prompt_token_count: 851419
+  total_token_count: 851419
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 720 seconds to 840 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 840 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+840, 960, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 840,\n    \"endOffset\": 856,\n    \"chapterSummary\": \"A woman in a striped shirt describes how she feels guilty for not doing more to protect the children involved.\"\n  },\n  {\n    \"startOffset\": 856,\n    \"endOffset\": 872,\n    \"chapterSummary\": \"A woman describes how she feels guilty for not doing more to protect the children involved.\"\n  },\n  {\n    \"startOffset\": 872,\n    \"endOffset\": 888,\n    \"chapterSummary\": \"A woman describes her childhood experience with sexual abuse.\"\n  },\n  {\n    \"startOffset\": 888,\n    \"endOffset\": 904,\n    \"chapterSummary\": \"A woman describes her childhood experience with sexual abuse.\"\n  },\n  {\n    \"startOffset\": 904,\n    \"endOffset\": 920,\n    \"chapterSummary\": \"A woman describes her childhood experience with sexual abuse and how her parents did not believe her.\"\n  },\n  {\n    \"startOffset\": 920,\n    \"endOffset\": 936,\n    \"chapterSummary\": \"A woman discusses the abuse that happened and the pain and shame she experiences even to this day.\"\n  },\n  {\n    \"startOffset\": 936,\n    \"endOffset\": 952,\n    \"chapterSummary\": \"A woman discusses the abuse that happened and the pain and shame she experiences even to this day.\"\n  },\n  {\n    \"startOffset\": 952,\n    \"endOffset\": 960,\n    \"chapterSummary\": \"A woman discusses how she feels about her abuser and how she is trying to let go of the pain.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.168994054
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.226954922
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.188622713
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.232310146
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.534855485
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.402861893
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.363759875
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.411997765
+  }
+}
+usage_metadata {
+  prompt_token_count: 851419
+  candidates_token_count: 423
+  total_token_count: 851842
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 840 seconds to 960 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 960 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+960, 1080, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 960,\n    \"endOffset\": 976,\n    \"chapterSummary\": \"A woman, Amanda Lee, describes how long she has carried the guilt of her childhood. \"\n  },\n  {\n    \"startOffset\": 976,\n    \"endOffset\": 992,\n    \"chapterSummary\": \"Amanda Lee says that she feels guilty that she did not do more to protect those who came after her. \"\n  },\n  {\n    \"startOffset\": 992,\n    \"endOffset\": 1008,\n    \"chapterSummary\": \"Amanda Lee describes how she told her parents about Peter White\'s abuse but they did not know what to do. \"\n  },\n  {\n    \"startOffset\": 1008,\n    \"endOffset\": 1024,\n    \"chapterSummary\": \"Amanda Lee describes how she remembers being 9 years old and seeing blood in the toilet. \"\n  },\n  {\n    \"startOffset\": 1024,\n    \"endOffset\": 1040,\n    \"chapterSummary\": \"Amanda Lee describes how Peter White was a pillar of society and how that helped him get away with his crimes. \"\n  },\n  {\n    \"startOffset\": 1040,\n    \"endOffset\": 1056,\n    \"chapterSummary\": \"Amanda Lee describes how she felt sick when she visited Peter White\'s house as an adult. \"\n  },\n  {\n    \"startOffset\": 1056,\n    \"endOffset\": 1072,\n    \"chapterSummary\": \"Amanda Lee describes the moment she went to the police station in 2017. \"\n  },\n  {\n    \"startOffset\": 1072,\n    \"endOffset\": 1080,\n    \"chapterSummary\": \"Amanda Lee says that she had to look Peter White in the eye and tell him that he ruined her life. \"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.169543326
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.22919
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.187429965
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.23353152
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.534551799
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.407451242
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.346099138
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.400221854
+  }
+}
+usage_metadata {
+  prompt_token_count: 851421
+  candidates_token_count: 468
+  total_token_count: 851889
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 960 seconds to 1080 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 1080 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+1080, 1200, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 1080,\n    \"endOffset\": 1096,\n    \"chapterSummary\": \"A woman in a green shirt and white pants is speaking to someone off-camera. She is talking about how she and her sister were abused by their neighbor. \"\n  },\n  {\n    \"startOffset\": 1096,\n    \"endOffset\": 1112,\n    \"chapterSummary\": \"She says the abuse started when she was 4 1/2 and continued until she was 10. She says she doesn\'t know how many times she was raped. \"\n  },\n  {\n    \"startOffset\": 1112,\n    \"endOffset\": 1128,\n    \"chapterSummary\": \"She says the man was a known pedophile and that the police took her complaint but didn\'t do anything. Her parents were very young when the abuse started.  \"\n  },\n  {\n    \"startOffset\": 1128,\n    \"endOffset\": 1144,\n    \"chapterSummary\": \"The woman speaking is Madeleine West, famous Australian actor.  She is talking about how she was abused by her neighbor Peter White. \"\n  },\n  {\n    \"startOffset\": 1144,\n    \"endOffset\": 1160,\n    \"chapterSummary\": \"The woman speaking is Madeleine West, famous Australian actor. She explains how she finally decided to go to the police. \"\n  },\n  {\n    \"startOffset\": 1160,\n    \"endOffset\": 1176,\n    \"chapterSummary\": \"The woman speaking is Madeleine West, famous Australian actor. She talks about how she confronted Peter White and how he didn\'t look at her. \"\n  },\n  {\n    \"startOffset\": 1176,\n    \"endOffset\": 1192,\n    \"chapterSummary\": \"The man speaking is a detective, Scott Tudnem.  He is speaking about how he was able to get a confession from Peter White. \"\n  },\n  {\n    \"startOffset\": 1192,\n    \"endOffset\": 1200,\n    \"chapterSummary\": \"Amanda Lee, a friend of Madeleine West, describes her experience with the abuse and how she feels about her past. \"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.177382961
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.235635638
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.196209416
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.232136011
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.556339324
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.417924613
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.371364594
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.424948812
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 544
+  total_token_count: 851966
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 1080 seconds to 1200 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 1200 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+1200, 1320, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 1200,\n    \"endOffset\": 1216,\n    \"chapterSummary\": \"A man with a beard and tattoos talks about how he felt when he first saw Scott Tudnem.\"\n  },\n  {\n    \"startOffset\": 1216,\n    \"endOffset\": 1232,\n    \"chapterSummary\": \"A woman talks about the shame she feels regarding the abuse she suffered.\"\n  },\n  {\n    \"startOffset\": 1232,\n    \"endOffset\": 1248,\n    \"chapterSummary\": \"A man with a beard and tattoos talks about the kind of people who pick on vulnerable people.\"\n  },\n  {\n    \"startOffset\": 1248,\n    \"endOffset\": 1264,\n    \"chapterSummary\": \"A man talks about how the level of depravity of Peter White shocked him.\"\n  },\n  {\n    \"startOffset\": 1264,\n    \"endOffset\": 1280,\n    \"chapterSummary\": \"A woman talks about how she was abused by Peter White. She states that it started when she was 4.5 years old, and ended when she was 10 years old.\"\n  },\n  {\n    \"startOffset\": 1280,\n    \"endOffset\": 1296,\n    \"chapterSummary\": \"A woman describes Peter White as a pillar of society and a pillar of the community, saying everyone loved him.\"\n  },\n  {\n    \"startOffset\": 1296,\n    \"endOffset\": 1312,\n    \"chapterSummary\": \"A woman describes her experience of confronting Peter White and how his response did not make her feel any better.\"\n  },\n  {\n    \"startOffset\": 1312,\n    \"endOffset\": 1320,\n    \"chapterSummary\": \"A woman talks about how she feels regarding the abuse she suffered.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.170784414
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.225587174
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.188025609
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.229535222
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.540954173
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.402098596
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.357006907
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.409220785
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 467
+  total_token_count: 851889
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 1200 seconds to 1320 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 1320 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+1320, 1440, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 1320,\n    \"endOffset\": 1336,\n    \"chapterSummary\": \"A woman discusses her experience of childhood abuse by Peter White.\"\n  },\n  {\n    \"startOffset\": 1336,\n    \"endOffset\": 1352,\n    \"chapterSummary\": \"A woman describes her abuser, Peter White, as a friendly neighbor who had a VHS player.\"\n  },\n  {\n    \"startOffset\": 1352,\n    \"endOffset\": 1368,\n    \"chapterSummary\": \"A woman describes the games her abuser would play.\"\n  },\n  {\n    \"startOffset\": 1368,\n    \"endOffset\": 1384,\n    \"chapterSummary\": \"A woman describes how she felt about being abused and how long it took to confront it.\"\n  },\n  {\n    \"startOffset\": 1384,\n    \"endOffset\": 1400,\n    \"chapterSummary\": \"A woman describes the moment she confronted her abuser.\"\n  },\n  {\n    \"startOffset\": 1400,\n    \"endOffset\": 1416,\n    \"chapterSummary\": \"A woman talks about her abuser\'s apology and how he couldn\'t remember the abuse.\"\n  },\n  {\n    \"startOffset\": 1416,\n    \"endOffset\": 1432,\n    \"chapterSummary\": \"A woman says she feels sick thinking about her abuser.\"\n  },\n  {\n    \"startOffset\": 1432,\n    \"endOffset\": 1440,\n    \"chapterSummary\": \"A woman says her memories of her abuse are all punctuated by pain and shame.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.17147702
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.229362562
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.190272227
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.229707971
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.548552573
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.406390697
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.35443306
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.408630699
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 419
+  total_token_count: 851841
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 1320 seconds to 1440 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 1440 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+1440, 1560, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 1440,\n    \"endOffset\": 1456,\n    \"chapterSummary\": \"A woman wearing a white shirt and a white jacket is talking with another woman wearing a white shirt and a black jacket. They are standing in front of a white picket fence and the house is in the background.\"\n  },\n  {\n    \"startOffset\": 1456,\n    \"endOffset\": 1472,\n    \"chapterSummary\": \"A woman wearing a white shirt with brown pattern is talking with another woman wearing a white shirt. The woman in black jacket is talking about her past.\"\n  },\n  {\n    \"startOffset\": 1472,\n    \"endOffset\": 1488,\n    \"chapterSummary\": \"A woman wearing a white shirt with brown pattern is talking about the most remarkable things she has ever seen. She is talking to a man wearing a black shirt.\"\n  },\n  {\n    \"startOffset\": 1488,\n    \"endOffset\": 1504,\n    \"chapterSummary\": \"A woman wearing a white shirt with brown pattern is talking about the most remarkable things she has ever seen. She is talking to a man wearing a black shirt.\"\n  },\n  {\n    \"startOffset\": 1504,\n    \"endOffset\": 1520,\n    \"chapterSummary\": \"A woman wearing a white shirt with brown pattern is talking about the most remarkable things she has ever seen. She is talking to a man wearing a black shirt.\"\n  },\n  {\n    \"startOffset\": 1520,\n    \"endOffset\": 1536,\n    \"chapterSummary\": \"A woman wearing a white shirt with brown pattern is talking about the most remarkable things she has ever seen. She is talking to a man wearing a black shirt.\"\n  },\n  {\n    \"startOffset\": 1536,\n    \"endOffset\": 1552,\n    \"chapterSummary\": \"A woman wearing a white shirt with brown pattern is talking about the most remarkable things she has ever seen. She is talking to a man wearing a black shirt.\"\n  },\n  {\n    \"startOffset\": 1552,\n    \"endOffset\": 1560,\n    \"chapterSummary\": \"A woman wearing a white shirt with brown pattern is talking about the most remarkable things she has ever seen. She is talking to a man wearing a black shirt.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.173148349
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.22592856
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.179962501
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.219170332
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.525901496
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.402920604
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.357904106
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.398172379
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 568
+  total_token_count: 851990
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 1440 seconds to 1560 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 1560 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+1560, 1680, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 1560,\n    \"endOffset\": 1576,\n    \"chapterSummary\": \"A close up of a man\'s tattooed hand. He is adjusting a recording device worn by a woman.\"\n  },\n  {\n    \"startOffset\": 1576,\n    \"endOffset\": 1592,\n    \"chapterSummary\": \"A woman is being interviewed about her childhood abuse. She had been abused by her neighbor. She says, that she couldn\'t recall how many times she had been raped, as it happened so frequently\"\n  },\n  {\n    \"startOffset\": 1592,\n    \"endOffset\": 1608,\n    \"chapterSummary\": \"A man describes the nature of the crimes he investigated. He says the perpetrator was a disgusting monster who had preyed on vulnerable children. He goes on to say that he has dealt with plenty of vile offenders in his career, but the level of depravity of this case was shocking\"\n  },\n  {\n    \"startOffset\": 1608,\n    \"endOffset\": 1624,\n    \"chapterSummary\": \"The woman says that she told her parents about the abuse when it was happening, but they didn\'t know what to do with it. She also says that she has struggled with the trauma for many years, and that it is hard to maintain the memory of that trauma.\"\n  },\n  {\n    \"startOffset\": 1624,\n    \"endOffset\": 1640,\n    \"chapterSummary\": \"The man who wore a recording device was a detective who had convinced the woman to wear the recording device. He thought that the risk was worth taking. He had never seen anything like this. The woman describes the moment when she knew that the perpetrator was going to get caught. The woman\'s abuser was her neighbor\"\n  },\n  {\n    \"startOffset\": 1640,\n    \"endOffset\": 1656,\n    \"chapterSummary\": \"The man describes the man who abused the woman. He says that he was a pillar of society and that everyone loved him. This gave him a \'get out of jail free card\'. He would take advantage of the fact that the woman\'s mother was profoundly deaf.\"\n  },\n  {\n    \"startOffset\": 1656,\n    \"endOffset\": 1672,\n    \"chapterSummary\": \"The woman says the perpetrator would play games with the children. He would ask them to dress up his penis or give it a kiss.\"\n  },\n  {\n    \"startOffset\": 1672,\n    \"endOffset\": 1680,\n    \"chapterSummary\": \"\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.176813692
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.23440665
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.197909102
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.23616375
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.559741318
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.413891643
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.395425975
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.44915098
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 624
+  total_token_count: 852046
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 1560 seconds to 1680 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 1680 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+1680, 1800, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 1680,\n    \"endOffset\": 1696,\n    \"chapterSummary\": \"A woman in a white tank top is shown from the shoulders up.  Her back is to the camera and a man with heavily tattooed arms is adjusting the strap on a black vest she is wearing. The scene is dark, but her face is clearly visible.\"\n  },\n  {\n    \"startOffset\": 1696,\n    \"endOffset\": 1712,\n    \"chapterSummary\": \"The woman with the black vest in the previous scene is now looking at a man in a black t-shirt with his arms crossed. The man is speaking, but his voice is not audible.  The woman\'s face is partially obscured by the darkness and her hair.  The scene is in a dark room with a brick wall in the background.\"\n  },\n  {\n    \"startOffset\": 1712,\n    \"endOffset\": 1728,\n    \"chapterSummary\": \"The man in the black t-shirt with arms crossed continues to speak. The woman in the black vest is looking at him with an earnest expression. Her face is clearly visible. The scene is in a dark room with a brick wall in the background.\"\n  },\n  {\n    \"startOffset\": 1728,\n    \"endOffset\": 1744,\n    \"chapterSummary\": \"The woman in the black vest is looking at the tattooed man with a smile as she speaks. The man in the black t-shirt with arms crossed continues to listen. The scene is in a dark room with a brick wall in the background.\"\n  },\n  {\n    \"startOffset\": 1744,\n    \"endOffset\": 1760,\n    \"chapterSummary\": \"The woman in the black vest continues to speak about the games her abuser would play with them.  The man in the black t-shirt continues to listen. The scene is in a dark room with a brick wall in the background.\"\n  },\n  {\n    \"startOffset\": 1760,\n    \"endOffset\": 1776,\n    \"chapterSummary\": \"A woman in a white tank top is looking at a man in a black t-shirt.  She speaks about how the abuse started when she was 4 1/2 years old. The man listens intently. The scene is in a room with a bookcase and a plant in the background.\"\n  },\n  {\n    \"startOffset\": 1776,\n    \"endOffset\": 1792,\n    \"chapterSummary\": \"The woman in a white tank top continues to speak about how the abuse started when she was 4 1/2 years old and continued until she was 10. The man listens intently. The scene is in a room with a bookcase and a plant in the background.\"\n  },\n  {\n    \"startOffset\": 1792,\n    \"endOffset\": 1800,\n    \"chapterSummary\": \"A picture of a young girl with pigtails is shown as the woman in the white tank top continues to speak about the abuse and how she is struggling with the trauma.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.173988834
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.226954922
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.191478819
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.228156507
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.52938503
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.39887464
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.373418719
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.416677952
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 724
+  total_token_count: 852146
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 1680 seconds to 1800 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 1800 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+1800, 1920, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 1800,\n    \"endOffset\": 1816,\n    \"chapterSummary\": \"A woman is talking about how confronting her past was terrifying.\"\n  },\n  {\n    \"startOffset\": 1816,\n    \"endOffset\": 1832,\n    \"chapterSummary\": \"The woman describes the moment she confronted her abuser, how he reacted, and how she felt at the time.\"\n  },\n  {\n    \"startOffset\": 1832,\n    \"endOffset\": 1848,\n    \"chapterSummary\": \"The woman shares that she told her parents when the abuse started, but that they didn\'t know what to do about it at the time. \"\n  },\n  {\n    \"startOffset\": 1848,\n    \"endOffset\": 1864,\n    \"chapterSummary\": \"The woman and a detective discuss the difficulties involved in dealing with cases like this, as the woman\'s abuser was seen as a pillar in the community.  \"\n  },\n  {\n    \"startOffset\": 1864,\n    \"endOffset\": 1880,\n    \"chapterSummary\": \"The woman describes the nature of the abuse. \"\n  },\n  {\n    \"startOffset\": 1880,\n    \"endOffset\": 1896,\n    \"chapterSummary\": \"The woman talks about how she was finally able to confront her abuser, that he was not remorseful for his actions. \"\n  },\n  {\n    \"startOffset\": 1896,\n    \"endOffset\": 1912,\n    \"chapterSummary\": \"The detective describes the level of detail and evidence needed to build a case against this kind of offender. \"\n  },\n  {\n    \"startOffset\": 1912,\n    \"endOffset\": 1920,\n    \"chapterSummary\": \"The detective describes his feelings on meeting the woman\'s abuser and how he felt about this case. \"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.166946858
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.22303842
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.19072403
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.223377079
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.538103461
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.395309269
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.347647876
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.400866628
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 478
+  total_token_count: 851900
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 1800 seconds to 1920 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 1920 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+1920, 2040, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 1920,\n    \"endOffset\": 1936,\n    \"chapterSummary\": \"A hand is holding a red mug with the text \'Yeah, because it happened. Yeah.\' appearing over the video.\"\n  },\n  {\n    \"startOffset\": 1936,\n    \"endOffset\": 1952,\n    \"chapterSummary\": \"A man with grey hair is in a dark room talking about how he is sorry for what he did. The text \'Oh, darling, I\'m so sorry. I can\'t. I don\'t remember doing anything like that. Melanie, I\'m sorry. Please, please forgive me. If I did, I don\'t remember.\' appears over the video. \"\n  },\n  {\n    \"startOffset\": 1952,\n    \"endOffset\": 1968,\n    \"chapterSummary\": \"A woman with long brown hair is sitting in a chair talking to another woman with a white shirt. The woman with brown hair says she is struggling to maintain the trauma that wants to swallow her. The text \'Please forgive for the stuff that I don\'t remember that I did.  I\'m very, very sorry if I did it. Yeah.\' appears over the video.  \"\n  },\n  {\n    \"startOffset\": 1968,\n    \"endOffset\": 1984,\n    \"chapterSummary\": \"A woman with short blonde hair is sitting in a chair talking to another woman. The woman with blonde hair says that it was a revolutionary moment. The text \'Okay. Okay.  It was going on 40 years and time was running out.\' appears over the video.\"\n  },\n  {\n    \"startOffset\": 1984,\n    \"endOffset\": 2000,\n    \"chapterSummary\": \"A man with a beard is sitting in a chair talking to a woman with blonde hair. The man is talking about the case he is working on and the type of people he has to deal with. The text \'Yeah.  She looked at me after she sort of, ah, sort of, bam\' appears over the video.\"\n  },\n  {\n    \"startOffset\": 2000,\n    \"endOffset\": 2016,\n    \"chapterSummary\": \"A woman with brown hair is sitting in a chair talking to another woman with a white shirt. The woman with brown hair explains that she did not want to look at the person involved in the case because she felt sick. The text \'That was just me in acting mode. What else am I going to say? Punch him in the face? Kick his teeth in? Forgive? Give you words to make you feel better so you can go back to your life and your international travel and your happy, healthy family, and you\'ll, meanwhile, I\'m in the deepest, darkest hole I\'ve ever been in my life.\' appears over the video. \"\n  },\n  {\n    \"startOffset\": 2016,\n    \"endOffset\": 2032,\n    \"chapterSummary\": \"A man with a beard is sitting in a chair talking to a woman. The man is talking about the strength that it takes to face someone who has done something wrong. The text \'And it all comes back to you, and you want forgiveness? Madeleine\'s composure was remarkable. The evidence she gained, critical.  To be able to do that under that pressure in that moment, the magnitude of what she did.\' appears over the video. \"\n  },\n  {\n    \"startOffset\": 2032,\n    \"endOffset\": 2040,\n    \"chapterSummary\": \"A man with a beard is sitting in a chair talking to a woman with blonde hair. The man is discussing how difficult it must have been to confront the person they are talking about. The text \'So yeah, the way she held it together.  Well, I don\'t think I could have done it. And there\'s probably not many people that could have.\' appears over the video.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.165998295
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.223885715
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.188174739
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.230919778
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.508048296
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.396769166
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.364438206
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.414306313
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 914
+  total_token_count: 852336
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 1920 seconds to 2040 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 2040 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+2040, 2160, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 2040,\n    \"endOffset\": 2056,\n    \"chapterSummary\": \"A woman in a white tank top and black vest is speaking with a bald man with extensive tattoos on his arms and neck.  The man is speaking about the role the woman is about to play.\"\n  },\n  {\n    \"startOffset\": 2056,\n    \"endOffset\": 2072,\n    \"chapterSummary\": \"The woman is speaking with the bald man about the difficulties of confronting the horrors of her childhood. She is experiencing anxiety as she prepares to confront the man who abused her.\"\n  },\n  {\n    \"startOffset\": 2072,\n    \"endOffset\": 2088,\n    \"chapterSummary\": \"The woman is sharing about the level of abuse that she endured from the age of 4 1/2 to 10 years old.\"\n  },\n  {\n    \"startOffset\": 2088,\n    \"endOffset\": 2104,\n    \"chapterSummary\": \"The woman is talking with a woman with short blonde hair and a man with tattoos about her parents and how they responded when she told them that she was being abused.\"\n  },\n  {\n    \"startOffset\": 2104,\n    \"endOffset\": 2120,\n    \"chapterSummary\": \"The woman shares about how she feels sick because she is about to see the man who abused her.\"\n  },\n  {\n    \"startOffset\": 2120,\n    \"endOffset\": 2136,\n    \"chapterSummary\": \"The woman is talking with a woman in a black sweater and a man with tattoos about how she feels about the man who abused her. She shares she doesn\'t want to speak to him.\"\n  },\n  {\n    \"startOffset\": 2136,\n    \"endOffset\": 2152,\n    \"chapterSummary\": \"The man and woman are speaking about the investigation and how the woman took a risk by going to see the man.\"\n  },\n  {\n    \"startOffset\": 2152,\n    \"endOffset\": 2160,\n    \"chapterSummary\": \"The bald man is talking about the nature of the offense and how it is one of the most remarkable things he has ever seen.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.170922756
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.225075766
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.193299592
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.23022674
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.538528264
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.399343044
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.36296922
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.412530124
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 548
+  total_token_count: 851970
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 2040 seconds to 2160 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 2160 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+2160, 2280, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 2160,\n    \"endOffset\": 2176,\n    \"chapterSummary\": \"A woman is walking outside in a sunny day.\"\n  },\n  {\n    \"startOffset\": 2176,\n    \"endOffset\": 2192,\n    \"chapterSummary\": \"The woman is walking outside and looking around.\"\n  },\n  {\n    \"startOffset\": 2192,\n    \"endOffset\": 2208,\n    \"chapterSummary\": \"A woman is walking on a street near a white fence. The woman has long dark hair and wears a white tank top.\"\n  },\n  {\n    \"startOffset\": 2208,\n    \"endOffset\": 2224,\n    \"chapterSummary\": \"A woman is walking on a street near a white fence. She is looking at a white fence.\"\n  },\n  {\n    \"startOffset\": 2224,\n    \"endOffset\": 2240,\n    \"chapterSummary\": \"A woman with long dark hair wears a white tank top and looks at the camera.\"\n  },\n  {\n    \"startOffset\": 2240,\n    \"endOffset\": 2256,\n    \"chapterSummary\": \"The woman is walking down a street looking at a house.\"\n  },\n  {\n    \"startOffset\": 2256,\n    \"endOffset\": 2272,\n    \"chapterSummary\": \"A woman is walking down the street looking at a house with a white fence. \"\n  },\n  {\n    \"startOffset\": 2272,\n    \"endOffset\": 2280,\n    \"chapterSummary\": \"\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.171338335
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.226612449
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.187429965
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.23353152
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.524014115
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.404272228
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.351088554
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.401922494
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 414
+  total_token_count: 851836
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 2160 seconds to 2280 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 2280 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+2280, 2400, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 2280,\n    \"endOffset\": 2296,\n    \"chapterSummary\": \"Madeleine West, an Australian actress, is about to play the most nerve-wracking role of her life. \"\n  },\n  {\n    \"startOffset\": 2296,\n    \"endOffset\": 2312,\n    \"chapterSummary\": \"She has been convinced to wear a hidden recording device by Detective Scott Tuddenham.\"\n  },\n  {\n    \"startOffset\": 2312,\n    \"endOffset\": 2328,\n    \"chapterSummary\": \"It was a risk, but one Detective Scott Tuddenham thought was worth taking.\"\n  },\n  {\n    \"startOffset\": 2328,\n    \"endOffset\": 2344,\n    \"chapterSummary\": \"The terror of confronting the darkest horrors of her childhood is momentarily crippling.\"\n  },\n  {\n    \"startOffset\": 2344,\n    \"endOffset\": 2360,\n    \"chapterSummary\": \"Madeleine West told Detective Scott Tuddenham she couldn\'t do this.\"\n  },\n  {\n    \"startOffset\": 2360,\n    \"endOffset\": 2376,\n    \"chapterSummary\": \"Detective Scott Tuddenham said to Madeleine West, \"\"Just act like you\'re a woman seeking justice.\"\"\"\n  },\n  {\n    \"startOffset\": 2376,\n    \"endOffset\": 2392,\n    \"chapterSummary\": \"Madeleine West said, \"\"Okay. And then, it just felt like jumping off a waterfall.\"\"\"\n  },\n  {\n    \"startOffset\": 2392,\n    \"endOffset\": 2400,\n    \"chapterSummary\": \"Madeleine West is ready to confront the monster who had preyed on her and a neighborhood of young children for more than a decade.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.169131249
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.23022674
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.192691222
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.24274376
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.537011
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.417568356
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.349865884
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.411465585
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 457
+  total_token_count: 851879
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 2280 seconds to 2400 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 2400 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+2400, 2520, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 2400,\n    \"endOffset\": 2416,\n    \"chapterSummary\": \"A woman is sitting on a wooden bench in the park, surrounded by trees. \"\n  },\n  {\n    \"startOffset\": 2416,\n    \"endOffset\": 2432,\n    \"chapterSummary\": \"A woman, Amanda Lee, is asked how she feels about the fact that she did not speak up about the abuse she suffered and the guilt she feels. She is visibly emotional as she talks about it. \"\n  },\n  {\n    \"startOffset\": 2432,\n    \"endOffset\": 2448,\n    \"chapterSummary\": \"A woman is asked about how she felt when she first saw Scott Tudnem, the detective who would help her. The woman talks about how Scott Tudnem\'s appearance did not fit the image of a detective, but she found him approachable. \"\n  },\n  {\n    \"startOffset\": 2448,\n    \"endOffset\": 2464,\n    \"chapterSummary\": \"A woman, Amanda Lee, discusses the fact that she was only 6 or 7 years old when Peter White, the man she accused of child abuse, started abusing her.\"\n  },\n  {\n    \"startOffset\": 2464,\n    \"endOffset\": 2480,\n    \"chapterSummary\": \"A woman, Amanda Lee, talks about the way Peter White would abuse her, his actions and how they made her feel as a child. She also talks about the guilt she felt about not speaking up. \"\n  },\n  {\n    \"startOffset\": 2480,\n    \"endOffset\": 2496,\n    \"chapterSummary\": \"A woman is being asked about whether it is difficult for her to reconcile the image of Peter White as someone who is regarded as a pillar of the community and the abuse she suffered. \"\n  },\n  {\n    \"startOffset\": 2496,\n    \"endOffset\": 2512,\n    \"chapterSummary\": \"A woman discusses Peter White\'s public image and how his abuse of her was never talked about in the community.\"\n  },\n  {\n    \"startOffset\": 2512,\n    \"endOffset\": 2520,\n    \"chapterSummary\": \"A woman, Amanda Lee, says that Peter White\'s abuse of her was a secret that she kept for most of her life.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.168994054
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.226099402
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.191478819
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.222531125
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.545164704
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.402568281
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.359139383
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.41134733
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 578
+  total_token_count: 852000
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 2400 seconds to 2520 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 2520 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+2520, 2640, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 2520,\n    \"endOffset\": 2536,\n    \"chapterSummary\": \"A woman who was abused as a child speaks about how difficult it was to confront her abuser.\"\n  },\n  {\n    \"startOffset\": 2536,\n    \"endOffset\": 2552,\n    \"chapterSummary\": \"The woman states that the abuse started when she was 4 1/2 and continued until she was 10.\"\n  },\n  {\n    \"startOffset\": 2552,\n    \"endOffset\": 2568,\n    \"chapterSummary\": \"The woman speaks about her parents and how they did not know what to do about the abuse.\"\n  },\n  {\n    \"startOffset\": 2568,\n    \"endOffset\": 2584,\n    \"chapterSummary\": \"The woman speaks about Peter White who was known as a pillar of the community. Everyone loved him which made him seem trustworthy.\"\n  },\n  {\n    \"startOffset\": 2584,\n    \"endOffset\": 2600,\n    \"chapterSummary\": \"A police detective who is a former professional boxer speaks about how Peter White abused the woman. The detective describes Peter White\'s actions in graphic detail.\"\n  },\n  {\n    \"startOffset\": 2600,\n    \"endOffset\": 2616,\n    \"chapterSummary\": \"The woman speaks about how she was abused. She also explains how she felt about the abuse.\"\n  },\n  {\n    \"startOffset\": 2616,\n    \"endOffset\": 2632,\n    \"chapterSummary\": \"The detective speaks about the abuse, saying that the investigation was intense and he was intrigued to see what else he could find.\"\n  },\n  {\n    \"startOffset\": 2632,\n    \"endOffset\": 2640,\n    \"chapterSummary\": \"The detective speaks about the importance of being truthful in cases like these. He also speaks about the level of courage it takes to report abuse.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.169543326
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.228156507
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.192843199
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.227641
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.543650806
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.402920604
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.358128548
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.410401762
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 494
+  total_token_count: 851916
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 2520 seconds to 2640 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 2640 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+2640, 2760, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 2640,\n    \"endOffset\": 2656,\n    \"chapterSummary\": \"A woman with blonde hair wearing a white shirt and a brown patterned jacket is talking to another woman, asking if she feels guilty about what she did to the children.\"\n  },\n  {\n    \"startOffset\": 2656,\n    \"endOffset\": 2672,\n    \"chapterSummary\": \"A woman with blonde hair and wearing a striped shirt is saying she is trying to let go, but she can\'t. She says she is not guilty;  she just didn\'t know what to do.\"\n  },\n  {\n    \"startOffset\": 2672,\n    \"endOffset\": 2688,\n    \"chapterSummary\": \"The woman with blonde hair says it took her a long time to reconcile what her parents did. The woman with blonde hair says they were too young to know what to do. She says it took her a long time to process the situation.\"\n  },\n  {\n    \"startOffset\": 2688,\n    \"endOffset\": 2704,\n    \"chapterSummary\": \"The woman with blonde hair is talking about how the people loved Peter White because he was a pillar of society, and that gave him a \\\"get out of jail free\\\" card.\"\n  },\n  {\n    \"startOffset\": 2704,\n    \"endOffset\": 2720,\n    \"chapterSummary\": \"A woman with blonde hair wearing a white shirt is talking about how Peter White\'s wife was profoundly deaf and how he took advantage of that.\"\n  },\n  {\n    \"startOffset\": 2720,\n    \"endOffset\": 2736,\n    \"chapterSummary\": \"The woman with blonde hair is talking about the twisted games Peter White would play with the children. She says that he would ask them to dress up his penis or to put flowers on it.\"\n  },\n  {\n    \"startOffset\": 2736,\n    \"endOffset\": 2752,\n    \"chapterSummary\": \"The woman with blonde hair is saying that she was terrified but that she just wanted to get the job done. The woman with blonde hair says she was terrified but that she just wanted to get the job done.\"\n  },\n  {\n    \"startOffset\": 2752,\n    \"endOffset\": 2760,\n    \"chapterSummary\": \"The woman with blonde hair is talking about how Peter White was covered in tattoos and bald as a badger. She says that he disarmed her from the word go.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.176387683
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.236339942
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.188921809
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.236516222
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.532789826
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.410342693
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.38763237
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.446826577
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 606
+  total_token_count: 852028
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 2640 seconds to 2760 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 2760 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+2760, 2880, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 2760,\n    \"endOffset\": 2776,\n    \"chapterSummary\": \"A man in a gray jacket and black cap walks by a red car.\"\n  },\n  {\n    \"startOffset\": 2776,\n    \"endOffset\": 2792,\n    \"chapterSummary\": \"The man walks in front of a business, holding a sign that reads \\\"Get Your Gas Here.\"\n  },\n  {\n    \"startOffset\": 2792,\n    \"endOffset\": 2808,\n    \"chapterSummary\": \"The man looks directly at the camera.\"\n  },\n  {\n    \"startOffset\": 2808,\n    \"endOffset\": 2824,\n    \"chapterSummary\": \"A woman in a black jacket and white tank top stands beside a man with tattoos on his arm, talking about the abuse the man inflicted on her.\"\n  },\n  {\n    \"startOffset\": 2824,\n    \"endOffset\": 2840,\n    \"chapterSummary\": \"The woman and the man with tattoos stand in front of a brick wall, talking.\"\n  },\n  {\n    \"startOffset\": 2840,\n    \"endOffset\": 2856,\n    \"chapterSummary\": \"The woman talks about the abuse she suffered.\"\n  },\n  {\n    \"startOffset\": 2856,\n    \"endOffset\": 2880,\n    \"chapterSummary\": \"The woman, wearing a white tank top, sits at a table, having a conversation with the man with tattoos.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.175396785
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.234231457
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.197135136
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.242026433
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.535371721
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.416677952
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.3654567
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.418221653
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 389
+  total_token_count: 851811
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 2760 seconds to 2880 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 2880 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
+2880, 3000, candidates {
+  content {
+    role: "model"
+    parts {
+      text: "```json\n[\n  {\n    \"startOffset\": 2880,\n    \"endOffset\": 2896,\n    \"chapterSummary\": \"Donald Trump, former president of the US, is facing 91 indictments and 4 criminal trials. The charges relate to his attempts to overturn the 2020 election results.\"\n  },\n  {\n    \"startOffset\": 2896,\n    \"endOffset\": 2912,\n    \"chapterSummary\": \"Trump is accused of Georgia election interference, falsifying business records in New York, and mishandling classified documents after leaving the White House.\"\n  },\n  {\n    \"startOffset\": 2912,\n    \"endOffset\": 2928,\n    \"chapterSummary\": \"Trump\'s supporters are still very loyal and believe he is a victim of a witch hunt by the Democrats.\"\n  },\n  {\n    \"startOffset\": 2928,\n    \"endOffset\": 2944,\n    \"chapterSummary\": \"Trump\'s supporters believe that he is a rockstar superhero president, a hero to democracy. They believe that the charges against him are a political witch hunt by Joe Biden and the Democrats.\"\n  },\n  {\n    \"startOffset\": 2944,\n    \"endOffset\": 2960,\n    \"chapterSummary\": \"Trump is facing challenges in the Republican Party, and he is now 78 years old, which could be a factor in the 2024 election.\"\n  },\n  {\n    \"startOffset\": 2960,\n    \"endOffset\": 2976,\n    \"chapterSummary\": \"Joe Biden, current president of the US, is also facing age concerns, as he is the oldest US president in history.\"\n  },\n  {\n    \"startOffset\": 2976,\n    \"endOffset\": 2992,\n    \"chapterSummary\": \"It is interesting to see that even though both Trump and Biden are very old, they are both running for president again. Biden is the oldest US president in history, while Trump will be 78 years old when the 2024 election rolls around.\"\n  },\n  {\n    \"startOffset\": 2992,\n    \"endOffset\": 3000,\n    \"chapterSummary\": \"People are already concerned about age being a factor for both Trump and Biden, as they both have shown signs of forgetfulness while in the White House.\"\n  }\n]\n```"
+    }
+  }
+  finish_reason: STOP
+  safety_ratings {
+    category: HARM_CATEGORY_HATE_SPEECH
+    probability: NEGLIGIBLE
+    probability_score: 0.174832523
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.229362562
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_DANGEROUS_CONTENT
+    probability: NEGLIGIBLE
+    probability_score: 0.183301061
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.232833058
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_HARASSMENT
+    probability: LOW
+    probability_score: 0.539771795
+    severity: HARM_SEVERITY_MEDIUM
+    severity_score: 0.414187819
+  }
+  safety_ratings {
+    category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+    probability: LOW
+    probability_score: 0.337421834
+    severity: HARM_SEVERITY_LOW
+    severity_score: 0.3945508
+  }
+}
+usage_metadata {
+  prompt_token_count: 851422
+  candidates_token_count: 572
+  total_token_count: 851994
+}
+, You are an assistant tasked with summarizing videos for retrieval.                     These summaries will be embedded and used to retrieve the raw video.                    Chapterize the video content by grouping the video content into chapters                     with intervals of 16 seconds and providing a concise detail for each chapter that is well optimized for retrieval.                    If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.                    Describe important scenes in the video concisely.                    If you are not sure about any info, please do not make it up.                     Only consider video from 2880 seconds to 3000 seconds. Ignore analyzing the rest of video.                    If it is the last chapter, set the endOffset to 3000 instead.\ 
+                    If a chapter includes prohibited content, set chapterSummary to "".                    For result, follow JSON schema.<JSONSchema>"\n{\n  \"description\": \"A list of chapters\",\n  \"type\": \"array\",\n  \"items\": {\n\t\"type\":\"object\",\n\t\"properties\": {\n\t\t\"startOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"endOffset\": {\n\t\t\t\"type\":\"integer\"\n\t\t},\n\t\t\"chapterSummary\": {\n\t\t\t\"type\":\"string\"\n\t\t}\n\t},\n\t\"required\": [\"startOffset\",\"endOffset\",\"chapterSummary\" ]\n  }\n}\n"</JSONSchema>"
+                    
