@@ -74,6 +74,7 @@ class EmbeddingPredictionClient:
            f"projects/{self.project}/locations/{self.location}"
            "/publishers/google/models/multimodalembedding@001"
         )
+        print(instances)
         response = self.client.predict(endpoint=endpoint, instances=instances)
 
         text_embedding = None
