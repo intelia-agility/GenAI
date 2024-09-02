@@ -307,6 +307,7 @@ if len(allResults)>=1:
         with columns[col_idx]:
             st.write(f"**Entity ID:** {result.get('entity_id')}")
             st.write(f"**Distance:** {result.get('distance')}")
+            st.write(f"**media Path:** {result.get('path')}")
             
             media_type = result.get('media_type')
             media_path = result.get('path')
@@ -315,8 +316,8 @@ if len(allResults)>=1:
                 image = load_media(media_path, media_type)
                 if image:
                     st.image(image, caption=result.get('entity_id'))
-            elif media_type == 'video':
-                st.video(media_path)  # Display video using Streamlit's built-in video player
+            #elif media_type == 'video':
+                #st.video(media_path)  # Display video using Streamlit's built-in video player
             
             st.write("-----")
             
