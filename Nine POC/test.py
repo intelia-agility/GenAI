@@ -1,3 +1,4 @@
+
 from google.cloud import bigquery
 from google.cloud.aiplatform_v1.types import NearestNeighborQuery
 from vertexai.resources.preview import (FeatureOnlineStore, FeatureView,
