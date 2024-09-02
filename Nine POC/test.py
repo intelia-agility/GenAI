@@ -313,7 +313,7 @@ if len(allResults)>=1:
             media_path = result.get('path')
 
             if media_type == 'image':
-                image = load_media(media_path, media_type)
+                image = load_image(media_path)
                 if image:
                     st.image(image, caption=result.get('entity_id'))
             #elif media_type == 'video':
