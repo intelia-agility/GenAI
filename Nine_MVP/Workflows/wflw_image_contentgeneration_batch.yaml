@@ -21,11 +21,16 @@ main:
             - REQUEST_FOLDER: "batch_request_fldr"
             - BATCH_PREDICTION_FOLDER: "batch_prediction_fldr_out"
             
+            # - IMAGE_PROMPT_TEXT: "You are an assistant tasked with describing images for retrieval. \
+            #                     These descriptions will be embedded and used to retrieve the raw image. \
+            #                     Give a concise description of the image that is well optimized for retrieval.\
+            #                     If there is a text in the image mention that. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\
+            #                     If you are not sure about any info, please do not make it up. Do not add any extra text to the output."
+
             - IMAGE_PROMPT_TEXT: "You are an assistant tasked with describing images for retrieval. \
-                                These descriptions will be embedded and used to retrieve the raw image. \
-                                Give a concise description of the image that is well optimized for retrieval.\
-                                If there is a text in the image mention that. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\
+                                Describe this image well optimized for retrieval. If there is a text in the image mention that. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\
                                 If you are not sure about any info, please do not make it up. Do not add any extra text to the output."
+
             - TEMPERATURE: 0.5
             - MAX_OUT_TOKENS: 2048
             - TOP_P: 0.8
