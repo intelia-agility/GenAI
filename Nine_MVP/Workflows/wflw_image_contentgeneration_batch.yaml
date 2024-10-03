@@ -7,15 +7,15 @@ main:
     - init:
         assign:
             - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
-            - LOCATION: "us-central1"
- 
+            - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+            - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")} 
+            - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")} 
             
             - CONTENT_METHOD: "batchPredictionJobs" 
             - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+CONTENT_METHOD}
             - MODEL: "publishers/google/models/gemini-1.5-flash-002"
             - MEDIA_TYPES: ['image/jpeg', 'image/png'] 
-            - SOURCE_BUCKET: "raw_nine_files"
-            - DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"
+
             - FUNC_CREATE_GCS_BATCH_REQUEST: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_create_batchrequest_file"}
             - REQUEST_FILE_PREFIX: "image_request"
             - REQUEST_FOLDER: "image_batch_request_fldr"
@@ -115,6 +115,11 @@ main:
                 request_file_folder: ${REQUEST_FOLDER}
         result:  request_file_res
 
+    - log_batch_request:
+        call: sys.log
+        args:
+          text: ${"Batch Request File Is Created - " + "gs://"+DESTINATION_BUCKET+"/"+request_file_res.body.request_file_name}
+
     # Step 6: Set request/response file name/location
     - set_request_response_locations:
         assign:
@@ -151,6 +156,11 @@ main:
                                           
                         result: llm_response 
 
+    - log_batch_prediction_job:
+        call: sys.log
+        args:
+          text: ${"Batch Prediction Job Is Created - " +llm_response.body.name}
+
     # Step 8: Get the job status 
     - get_job_status:    
         call: googleapis.aiplatform.v1.projects.locations.batchPredictionJobs.get
@@ -161,13 +171,25 @@ main:
         result: listResult
     
     # Step 9: check the job status if succeeded or failed return
-    - checkIfDone:
-            switch:
-              - condition: ${listResult.state=="JOB_STATE_SUCCEEDED"}
-                return: {output_dir: "${listResult.outputInfo.gcsOutputDirectory}", state:"JOB_STATE_SUCCEEDED" } 
+    - checkIfDone: 
+        switch:
+            - condition: ${listResult.state=="JOB_STATE_SUCCEEDED"}
+              steps:
+                    - set_success_out_put:
+                        assign:
+                            - out_result:
+                                   output_dir: "${listResult.outputInfo.gcsOutputDirectory}"
+                                   state: "JOB_STATE_SUCCEEDED" 
+              next: log_job_execution
 
-              - condition: ${listResult.state=="JOB_STATE_FAILED"}
-                return:  {output_dir: "", state:"JOB_STATE_FAILED" } 
+            - condition: ${listResult.state=="JOB_STATE_FAILED"}
+              steps:
+                    - set_fail_out_put:
+                        assign:
+                            - out_result:
+                                   output_dir: ""
+                                   state: "JOB_STATE_FAILED" 
+              next: log_job_execution
 
     # Step 10: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
     - wait:
@@ -175,7 +197,15 @@ main:
             args:
                 seconds: 120
             next: get_job_status
- 
+
+    - log_job_execution:
+        call: sys.log
+        args:
+          text: ${"Batch Prediction Is Finished - " + "Output Bucket Directory "+ out_result.output_dir+ " ," + "Job Execution Status "+ out_result.state}
+    
+    # Step 11: return the result
+    - return_result:
+        return: ${out_result}
 
  
 
