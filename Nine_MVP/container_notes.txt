@@ -16,3 +16,8 @@ https://cloud.google.com/workflows/docs/tutorials/batch-and-workflows#gcloud_1
 https://medium.com/vida-engineering/how-to-run-python-scripts-with-gcp-batch-37c53837d019
 https://medium.com/google-cloud/how-to-run-batch-data-jobs-with-gcp-batch-and-cloud-workflows-102b6545ee3e
 
+
+to call it in workflow
+
+https://cloud.google.com/workflows/docs/tutorials/batch-and-workflows#gcloud_1
+
