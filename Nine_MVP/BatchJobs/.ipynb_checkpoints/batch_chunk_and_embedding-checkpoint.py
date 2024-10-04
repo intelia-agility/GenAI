@@ -1,59 +1,54 @@
 import google.cloud.bigquery as bq
-from langchain_community.document_loaders import BigQueryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_vertexai import VertexAIEmbeddings
-from langchain_google_community import BigQueryVectorStore
+from langchain_google_community import BigQueryVectorStore,BigQueryLoader
 from datetime import datetime
-from google.auth import default
+import os
+import logging
 
 
-def chunk_and_embedding():
-    # Define our query
-    query = """
-    SELECT id,media_type,content,test_metadata 
-    FROM `nine-quality-test.Nine_Quality_Test.content_embeddings` ;
-    """
-
-    # Load the data
-    loader = BigQueryLoader(
-        query, metadata_columns=["id"], page_content_columns=["content","media_type","test_metadata"]
-    )
     
-    DATASET = "my_langchain_dataset"  # @param {type: "string"}
-    TABLE = "doc_and_vectors"  # @param {type: "string"}
+def chunk_and_embedding(project_id: str= None, dataset: str= None, table: str= None, region: str =None,\
+                        metadata_columns: list[str]=None, page_content_columns: list[str]= None, \
+                        source_query_str: str= None, separators:  list[str]=None, chunk_size: int=None, \
+                       chunk_overlap: int=0):
+    """
+        Chunks the combination of page_content_columns from a given bigquery source string and generates
+        text embeddings for them.
 
+        Args:
+            
 
-    PROJECT_ID = 'nine-quality-test'
+        Returns:
+             
+        """
+    
+
+     # Load the data
+    loader = BigQueryLoader(
+        source_query_str, metadata_columns=metadata_columns, page_content_columns=page_content_columns
+    )
 
     embedding = VertexAIEmbeddings(
-        model_name="textembedding-gecko@latest", project=PROJECT_ID
+        model_name="textembedding-gecko@latest", project=project_id
     )
 
-    print('you are here 1')
-    store = BigQueryVectorStore(
-        project_id=PROJECT_ID,
-        dataset_name=DATASET,
-        table_name=TABLE,
-        location=REGION,
-        embedding=embedding,
-    )
-    
-    print('you are here 2')
-
+   
     documents = []
     documents.extend(loader.load())
     
-    print('you are here 3')
+    logging.info (f"Data Loaded from source - {source_query_str}")
+
 
     # Split the documents into chunks
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=20,
-        chunk_overlap=5#,
-       # separators=["\n\n"],
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+       separators=separators,
     )
     doc_splits = text_splitter.split_documents(documents)
 
-    print('you are here 4')
+    logging.info (f"Documents splitted - chunk_size {chunk_size}, chunk_overlap {chunk_overlap}")
 
 
     # get current processing time to add it to metadata, datetime object containing current date and time
@@ -72,21 +67,56 @@ def chunk_and_embedding():
             prev=split.metadata["id"]
         chunk_idx +=1
         
-    print('you are here 5')
+    logging.info (f"Metadata added to chunks")
 
-    embedding_model = VertexAIEmbeddings(
-        model_name="textembedding-gecko@latest", project=PROJECT_ID
-    )
+    
     bq_store = BigQueryVectorStore(
-        project_id=PROJECT_ID,
-        dataset_name=DATASET,
-        table_name=TABLE,
-        location=REGION,
+        project_id=project_id,
+        dataset_name=dataset,
+        table_name=table,
+        location=region,
         embedding=embedding,
     ) 
-    print('you are here 6')
+    logging.info (f"Bigquery store info is set -  ProjectID {project_id}, Region {region}, Dataset {dataset}, Table {table}")
 
 
     _=bq_store.add_documents(doc_splits)
+    
+    logging.info (f"Chunks and embeddings added to the store")
 
     return 'done'
+
+if __name__ == "__main__":
+    project_id= os.environ.get("PROJECT_ID") 
+    dataset= os.environ.get("DATASET")  
+    table= os.environ.get("TABLE") 
+    region= os.environ.get("REGION") 
+    metadata_columns= str(os.environ.get("META_DATA_COLUMNS")).split(',') 
+    page_content_columns= str(os.environ.get("PAGE_CONTENT_COLUMNS")).split(',') 
+    source_query_str= os.environ.get("SOURCE_QUERY_STR") 
+    separators= None if str(os.environ.get("SEPARATORS"))=="" else str(os.environ.get("SEPARATORS")).split(',') 
+    chunk_size= os.environ.get("CHUNK_SIZE")
+    chunk_overlap= 0 if os.environ.get("CHUNK_OVERLAP")=="" else os.environ.get("CHUNK_OVERLAP")
+ 
+
+    project_id= 'nine-quality-test' 
+    dataset= 'my_langchain_dataset'
+    table= 'doc_and_vectors'
+    region= 'us-central1'
+    metadata_columns= "id".split(",")
+    page_content_columns= "content,media_type,test_metadata".split(',') 
+    source_query_str= """
+    SELECT id,media_type,content,test_metadata 
+    FROM `nine-quality-test.Nine_Quality_Test.content_embeddings` ;
+    """
+    separators= "\n\n"
+    chunk_size= 25
+    chunk_overlap= 5
+    
+    
+    message=chunk_and_embedding(project_id=project_id, dataset=dataset, table=table, region=region,\
+                        metadata_columns= metadata_columns, page_content_columns=page_content_columns, \
+                        source_query_str=source_query_str, separators=separators, chunk_size=chunk_size, \
+                       chunk_overlap=chunk_overlap)
+    print(message)
+     
