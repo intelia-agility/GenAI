@@ -7,7 +7,7 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY batch_chunk_and_embedding.py .
+COPY batch_chunk_and_load.py .
 
 # # Make port 8080 available to the world outside this container
 # EXPOSE 8080
@@ -15,4 +15,4 @@ COPY batch_chunk_and_embedding.py .
 # # Define environment variable
 # ENV NAME World
 
-ENTRYPOINT [ "python3", "batch_chunk_and_embedding.py"]
+ENTRYPOINT [ "python3", "batch_chunk_and_load.py"]
