@@ -121,8 +121,7 @@ def create_batch_request_file(request):
     request_file_prefix =request_args['request_file_prefix']
     request_file_folder =request_args['request_file_folder']
     prompt_text= request_args['prompt_text']
-    media_types= str(request_args['media_types']).strip().replace("[",'').\
-                 replace(']','').replace("'",'').split(',')
+    media_types= [media.strip() for media in  str(request_args['media_types']).strip().replace("[",''). replace(']','').replace("'",'').split(',')]
 
  
     request_content= request_args['request_content']

@@ -19,7 +19,6 @@ main:
             - FUNC_CREATE_GCS_BATCH_REQUEST: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_batchrequest_file"}
             
             - REQUEST_FILE_PREFIX: "image_request"
-            - NOW: ${string(sys.now())}
             - REQUEST_FOLDER: "image_batch_request_fldr"
             - PROCESSED_REQUEST_FOLDER: "image_batch_request_fldr_processed"
             - BATCH_PREDICTION_FOLDER: "image_batch_prediction_fldr_out"
@@ -54,12 +53,23 @@ main:
                         bucket: ${DESTINATION_BUCKET}
                         prefix: ${REQUEST_FOLDER}
                     result: list_result
-                    next: loop_over_request_files
+                - if_empty_folder:
+                    switch:
+                        - condition: ${ not ("items"  in list_result)}
+                          steps:
+                                - is_empty:   
+                                    next: genearte_batch_request_file
+                        - condition: ${"items"  in list_result}
+                          steps:
+                                - not_empty:   
+                                    next: loop_over_request_files
                 
         except:           
             as: e
             steps:
                 #  If no file exists, generate new request file(s)
+                - ret1:
+                     return: ${e}
                 - handle_error: 
                     switch:
                         - condition: ${e.code == 404}
@@ -89,7 +99,9 @@ main:
                 media_types: ${MEDIA_TYPES}
         result:  request_file_res
 
-    
+    - ret:
+        return: ${request_file_res}
+
     - log_batch_request:
         call: sys.log
         args:
