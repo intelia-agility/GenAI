@@ -29,7 +29,7 @@ def upload_file(request_file : tempfile,dest_bucket_name:str =None,request_file_
     dest_blob.upload_from_filename(temp_file)                              
 
                                 
-def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: str= None,
+def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: str= None, source_folder_name: str=None,
                           request_file_prefix: str= None, request_file_folder: str= None, mime_types: list[str]= None,
                           prompt_text: str="", temperature: float= None,
                           max_output_tokens: int=2048, top_p: float= None, top_k : float= None):
@@ -53,7 +53,7 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
     bucket = storage_client.get_bucket(source_bucket_name)
 
     # List all objects in the bucket
-    blobs = bucket.list_blobs()  
+    blobs = bucket.list_blobs(prefix=source_folder_name)  
     version=0
     index=0     
     max_index=30000
@@ -61,6 +61,7 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
     now=datetime.strptime(str(datetime.now()),
                                '%Y-%m-%d %H:%M:%S.%f')
     now=datetime.strftime(now, '%Y%m%d%H%M%S')
+    versions=[]
 
     for blob in blobs:                         
                     if blob.content_type in mime_types:                            
@@ -121,7 +122,8 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
  
                          if index==(max_index-1):
                                 upload_file(rf,dest_bucket_name=dest_bucket_name,request_file_folder=request_file_folder,request_file_prefix=request_file_prefix,version=version, request_file_post_fix=now)
-                                rf.close()                                
+                                rf.close() 
+                                versions.append(version)                               
                                 index=0
                                 version +=1
                                 request_list=[]
@@ -132,8 +134,9 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
 
     if not rf is None: 
         upload_file(rf,dest_bucket_name=dest_bucket_name,request_file_folder=request_file_folder,request_file_prefix=request_file_prefix,version=version,request_file_post_fix=now)
+        versions.append(version)   
  
-    return 1
+    return len(versions)
 
 @functions_framework.http
 def create_batch_request_file(request):
@@ -151,6 +154,7 @@ def create_batch_request_file(request):
 
     dest_bucket_name =request_args['destination_bucket']
     source_bucket_name =request_args['source_bucket']
+    source_folder_name=request_args['source_folder']
     request_file_prefix =request_args['request_file_prefix']
     request_file_folder =request_args['request_file_folder']
     prompt_text= request_args['prompt_text']
@@ -179,11 +183,12 @@ def create_batch_request_file(request):
     else:
          top_k=50
 
+    versions=0
     if  request_content=='image':
-      _=create_image_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,
+      versions=create_image_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
                                       request_file_prefix=request_file_prefix,request_file_folder=request_file_folder,
                                       mime_types=media_types, prompt_text=prompt_text,temperature=temperature,
                                      max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k
                                       )  
 
-    return {"status":"SUCCESS"}
+    return {"status":"SUCCESS","file_count":versions}

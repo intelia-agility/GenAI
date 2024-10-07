@@ -10,6 +10,7 @@ main:
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
             - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")} 
             - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")} 
+            - SOURCE_IMAGE_FOLDER: "2023"
             
             - CONTENT_METHOD: "batchPredictionJobs" 
             - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+CONTENT_METHOD}
@@ -88,6 +89,7 @@ main:
                 name: "GENERATE BATCH REQUEST FILE FOR IMAGE"            
                 destination_bucket: ${DESTINATION_BUCKET}
                 source_bucket: ${SOURCE_BUCKET}
+                source_folder: ${SOURCE_IMAGE_FOLDER}
                 request_file_prefix: ${REQUEST_FILE_PREFIX} 
                 request_file_folder:  ${REQUEST_FOLDER}              
                 prompt_text:  ${IMAGE_PROMPT_TEXT}
@@ -99,13 +101,26 @@ main:
                 media_types: ${MEDIA_TYPES}
         result:  request_file_res
 
+    
+    #Step 3: Check if any file is created
+    - if_requestfile_generated:
+            switch:
+                - condition: ${ request_file_res.body.file_count>=1}
+                  steps:
+                        - is_generated:   
+                            next: log_batch_request
+                - condition: ${request_file_res.body.file_count>=1}
+                  steps:
+                        - not_generated:   
+                            return: "No request file is generated-Check the source image folder"
+
 
     - log_batch_request:
         call: sys.log
         args:
           text: ${"Batch Request File Is Created - " + "gs://"+DESTINATION_BUCKET+"/"+REQUEST_FOLDER}
    
-    # Step 3: Get the list of newly generated request file(s)
+    # Step 4: Get the list of newly generated request file(s)
     - get_new_request_files:
         call: googleapis.storage.v1.objects.list
         args:
@@ -114,7 +129,7 @@ main:
         result: list_result
    
 
-   # Step 4: loop over request files and genearte batch request for them
+   # Step 5: loop over request files and genearte batch request for them
    # each file can only be 30,000 request
     - loop_over_request_files:
         for: 
@@ -122,14 +137,14 @@ main:
             in: ${list_result.items}
             steps:
                                          
-                    # Step 5: Set request/response file name/location
+                    # Step 6: Set request/response file name/location
                     - set_request_response_locations:
                         assign:
                             - source_file: ${"gs://"+DESTINATION_BUCKET+"/"+item.name}
                             #- source_file: "gs://raw_nine_files/reqtest.json"
                             - destination_folder: ${"gs://"+DESTINATION_BUCKET+"/"+BATCH_PREDICTION_FOLDER}
                 
-                    # Step 6: Extract image contents by sending a batch prediction job                             
+                    # Step 7: Extract image contents by sending a batch prediction job                             
                     - create_batch_request_job:        
                                 steps:
                                     - ask_llm:
@@ -164,7 +179,7 @@ main:
                         args:
                            text: ${"Batch Prediction Job Is Created - " +llm_response.body.name}
 
-                    # Step 7: Get the job status 
+                    # Step 8: Get the job status 
                     - get_job_status:    
                         call: googleapis.aiplatform.v1.projects.locations.batchPredictionJobs.get
                         args:
@@ -173,7 +188,7 @@ main:
                     
                         result: listResult
                     
-                    # Step 8: check the job status if succeeded or failed return
+                    # Step 9: check the job status if succeeded or failed return
                     - checkIfDone: 
                         switch:
                               - condition: ${listResult.state=="JOB_STATE_SUCCEEDED"}
@@ -198,7 +213,7 @@ main:
                                             - BATCH_OUTPUS: ${list.concat(BATCH_OUTPUS,out_result)} 
                                 next: log_job_execution
 
-                    # Step 9: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
+                    # Step 10: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
                     - wait:
                             call: sys.sleep
                             args:
@@ -210,11 +225,11 @@ main:
                         args:
                            text: ${"Batch Prediction Is Finished - " + "Output Bucket Directory "+ out_result.output_dir+ " ," + "Job Execution Status "+ out_result.state + ", "+ "Processed Request File "+ out_result.request_file }
                     
-                    # Step 10: Move the processed request file
+                    # Step 11: Move the processed request file
                        
-    # Step 11: move all files
+    # Step 12: move all files
 
-    # Step 12: return the result
+    # Step 13: return the result
     - return_result:
         return: ${BATCH_OUTPUS}
 
