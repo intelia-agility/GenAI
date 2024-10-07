@@ -10,11 +10,11 @@ main:
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
             - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")} 
             - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")} 
-            - SOURCE_IMAGE_FOLDER: "2023"
+            - SOURCE_IMAGE_FOLDER: "2024"
             
             - CONTENT_METHOD: "batchPredictionJobs" 
             - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+CONTENT_METHOD}
-            - MODEL: "publishers/google/models/gemini-1.5-flash-002"
+            - MODEL: "publishers/google/models/gemini-1.5-pro-002"   # "publishers/google/models/gemini-1.5-flash-002"
             - MEDIA_TYPES: "image/jpeg,image/png"
 
             - FUNC_CREATE_GCS_BATCH_REQUEST: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_batchrequest_file"}
