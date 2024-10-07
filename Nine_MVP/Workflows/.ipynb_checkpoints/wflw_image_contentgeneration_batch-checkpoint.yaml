@@ -99,6 +99,7 @@ main:
                 media_types: ${MEDIA_TYPES}
         result:  request_file_res
 
+
     - log_batch_request:
         call: sys.log
         args:
@@ -112,6 +113,7 @@ main:
             prefix: ${REQUEST_FOLDER}
         result: list_result
    
+
    # Step 4: loop over request files and genearte batch request for them
    # each file can only be 30,000 request
     - loop_over_request_files:
@@ -138,7 +140,7 @@ main:
                                                 type: OAuth2
                                             body:
                                             
-                                                displayName: ${"BP_JOB_IMAGE_CONTENT_GENERATOR_"+item.name}
+                                                displayName: ${"BP_JOB_IMAGE_CONTENT_GENERATOR_"+text.replace_all(item.name, ".json","") }
                                                 model: ${MODEL}
                 
                                                 inputConfig: {

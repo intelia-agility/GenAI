@@ -6,7 +6,7 @@ from datetime import datetime
 import json
 
 
-def upload_file(request_file : tempfile,dest_bucket_name:str =None,request_file_folder: str =None,request_file_prefix: str =None, version: int=0):
+def upload_file(request_file : tempfile,dest_bucket_name:str =None,request_file_folder: str =None,request_file_prefix: str =None, version: int=0, request_file_post_fix : str=""):
 
     """upload file into gcs
    
@@ -23,7 +23,7 @@ def upload_file(request_file : tempfile,dest_bucket_name:str =None,request_file_
     # Extract name to the temp file
     temp_file = "".join([str(temp.name)])
     # Uploading the temp image file to the bucket
-    dest_filename = f"{request_file_folder}/"+request_file_prefix+'_'+str(version)+".json" 
+    dest_filename = f"{request_file_folder}/"+request_file_prefix+'_'+request_file_post_fix+'_'+str(version)+".json" 
     dest_bucket = client.get_bucket(dest_bucket_name)
     dest_blob = dest_bucket.blob(dest_filename)
     dest_blob.upload_from_filename(temp_file)                              
@@ -57,6 +57,10 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
     version=0
     index=0     
     max_index=30000
+
+    now=datetime.strptime(str(datetime.now()),
+                               '%Y-%m-%d %H:%M:%S.%f')
+    now=datetime.strftime(now, '%Y%m%d%H%M%S')
 
     for blob in blobs:                         
                     if blob.content_type in mime_types:                            
@@ -116,7 +120,7 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
                          rf.flush()
  
                          if index==(max_index-1):
-                                upload_file(rf,dest_bucket_name=dest_bucket_name,request_file_folder=request_file_folder,request_file_prefix=request_file_prefix,version=version)
+                                upload_file(rf,dest_bucket_name=dest_bucket_name,request_file_folder=request_file_folder,request_file_prefix=request_file_prefix,version=version, request_file_post_fix=now)
                                 rf.close()                                
                                 index=0
                                 version +=1
@@ -127,7 +131,7 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
                                 index =index+1
 
     if not rf is None: 
-        upload_file(rf,dest_bucket_name=dest_bucket_name,request_file_folder=request_file_folder,request_file_prefix=request_file_prefix,version=version)
+        upload_file(rf,dest_bucket_name=dest_bucket_name,request_file_folder=request_file_folder,request_file_prefix=request_file_prefix,version=version,request_file_post_fix=now)
  
     return 1
 
