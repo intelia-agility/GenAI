@@ -1,0 +1,75 @@
+main:
+  params: [input]
+
+  steps:
+    # Step 1: Retrieve the bucket name from an environment variable
+    - init:
+        assign:
+            - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+            - CONTENT_METHOD: "batchPredictionJobs" 
+            - LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+CONTENT_METHOD}
+            - BIGQUERY_TABLE: ${"bq://"+PROJECT+".langchain_dataset.chucked_data"}
+            - TEXT_EMBEDDING_MODEL: "publishers/google/models/textembedding-gecko"
+			
+            - DATASET_ID: "langchain_dataset"
+            - TABLE: "chucked_data"
+            - METADATA_COLUMNS: "id,content,path,media_type,test_metadata"
+            - PAGE_CONTENT_COLUMNS: "content,test_metadata"
+            - SOURCE_QUERY: "SELECT id,media_type,content,test_metadata, path  FROM `nine-quality-test.Nine_Quality_Test.test_long_artcles` ;" 
+            - FUNC_CHUNK_BG_CONTENT: "https://us-central1-nine-quality-test.cloudfunctions.net/func_chunk_bq_content"
+            - SEPARATORS: "\n"
+            - CHUNK_SIZE: 500
+            - CHUNK_OVERLAP: 10
+    
+ 
+    - chunk_content:
+        call: http.post
+        args:
+            url: ${FUNC_CHUNK_BG_CONTENT}
+            query:
+                name: "CHUNK CONTENT"            
+                project_id: ${PROJECT}
+                dataset: ${DATASET_ID}
+                table: ${TABLE} 
+                region:  ${LOCATION}              
+                metadata_columns:  ${METADATA_COLUMNS}
+                page_content_columns: ${PAGE_CONTENT_COLUMNS}
+                source_query_str: ${SOURCE_QUERY}
+                separators: ${SEPARATORS}            
+                chunk_size: ${CHUNK_SIZE}
+                chunk_overlap: ${CHUNK_OVERLAP}
+        result:  result_set
+ 
+    # step : extract embeddings                            
+    - extract_embeddings:        
+                steps:
+                    - ask_llm:
+                        call: http.post
+                        args:
+                            url: ${LLM_API_ENDPOINT}
+                            auth:
+                                type: OAuth2
+                            body:
+                               
+                                displayName: "TEXT_EMBEDDING_BATCH_JOB"
+                                model: ${TEXT_EMBEDDING_MODEL}
+                                inputConfig: {
+                                        instancesFormat:"bigquery",
+                                        bigquerySource:{  
+                                                "inputUri" : "${BIGQUERY_TABLE}"
+                                                 }
+                                            }
+                                 
+                                outputConfig: {
+                                        predictionsFormat:"bigquery",
+                                        bigqueryDestination:{
+                                               outputUri: "${BIGQUERY_TABLE}"
+
+                                              }
+                                          }
+
+                        result: llm_response 
+    - return_result:
+        return: ${llm_response}   
+
