@@ -102,7 +102,7 @@ main:
     - log_batch_request:
         call: sys.log
         args:
-          text: ${"Batch Request File Is Created - " + "gs://"+DESTINATION_BUCKET+"/"+request_file_res.body.request_file_name}
+          text: ${"Batch Request File Is Created - " + "gs://"+DESTINATION_BUCKET+"/"+REQUEST_FOLDER}
    
     # Step 3: Get the list of newly generated request file(s)
     - get_new_request_files:
@@ -111,7 +111,6 @@ main:
             bucket: ${DESTINATION_BUCKET}
             prefix: ${REQUEST_FOLDER}
         result: list_result
-
    
    # Step 4: loop over request files and genearte batch request for them
    # each file can only be 30,000 request
