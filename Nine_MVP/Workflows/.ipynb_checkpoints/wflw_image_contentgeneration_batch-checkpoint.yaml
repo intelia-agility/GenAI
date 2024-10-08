@@ -109,7 +109,7 @@ main:
                   steps:
                         - is_generated:   
                             next: log_batch_request
-                - condition: ${request_file_res.body.file_count>=1}
+                - condition: ${request_file_res.body.file_count==0}
                   steps:
                         - not_generated:   
                             return: "No request file is generated-Check the source image folder"
