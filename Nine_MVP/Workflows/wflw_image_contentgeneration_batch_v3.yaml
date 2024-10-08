@@ -23,7 +23,7 @@ main:
             - REQUEST_FOLDER: "image_batch_request_fldr"
             - PROCESSED_REQUEST_FOLDER: "image_batch_request_fldr_processed"
             - BATCH_PREDICTION_FOLDER: "image_batch_prediction_fldr_out"
-            - BATCH_OUTPUT: []
+            - BATCH_OUTPUS: []
                  
             # - IMAGE_PROMPT_TEXT: "You are an assistant tasked with describing images for retrieval. \
             #                     These descriptions will be embedded and used to retrieve the raw image. \
@@ -199,7 +199,7 @@ main:
                                                 output_dir: "${listResult.outputInfo.gcsOutputDirectory}"
                                                 state: "JOB_STATE_SUCCEEDED" 
                                                 request_file: ${source_file}
-                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}
+                                            - BATCH_OUTPUS: ${list.concat(BATCH_OUTPUS,out_result)}
                                 next: log_job_execution
 
                               - condition: ${listResult.state=="JOB_STATE_FAILED"}
@@ -210,7 +210,7 @@ main:
                                                 output_dir: ""
                                                 state: "JOB_STATE_FAILED"
                                                 request_file: ${source_file}
-                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)} 
+                                            - BATCH_OUTPUS: ${list.concat(BATCH_OUTPUS,out_result)} 
                                 next: log_job_execution
 
                     # Step 10: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
@@ -231,7 +231,7 @@ main:
 
     # Step 13: return the result
     - return_result:
-        return: ${BATCH_OUTPUT}
+        return: ${BATCH_OUTPUS}
 
  
 
