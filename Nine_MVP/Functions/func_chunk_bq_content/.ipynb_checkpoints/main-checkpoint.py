@@ -73,15 +73,15 @@ def create_table(project_id,dataset_id,table_id):
         table = client.get_table(full_table_id)  # Make an API request.
         print(f"Table '{full_table_id}' already exists.")
         
-        # Truncate the table if exist
-        query = f"TRUNCATE TABLE `{full_table_id}`"
+        # Drop the table if exist
+        query = f"DROP TABLE `{full_table_id}`"
 
         # Execute the query
         try:
             client.query(query).result()  # Make an API request.
-            print(f"Table '{full_table_id}' truncated successfully.")
+            print(f"Table '{full_table_id}' dropped successfully.")
         except Exception as e:
-            print(f"Error truncating table '{full_table_id}': {e}")
+            print(f"Error dropping table '{full_table_id}': {e}")
     except :
         # If the table does not exist, create it
         table = bigquery.Table(full_table_id, schema=schema)
@@ -112,7 +112,8 @@ def chunk_bq_content(request):
     source_query_str= request_args['source_query_str']
     #separators= "\n" if str(request_args['separators'])=="" else str(request_args['separators']).split(',') 
     chunk_size= 1000 if str(request_args['chunk_size']) in ["None",""] else int(str(request_args['chunk_size']))  
-    chunk_overlap= 0 if str(request_args['chunk_overlap']) in ["None",""] else int(str(request_args['chunk_overlap']))  
+    chunk_overlap= 0 if str(request_args['chunk_overlap']) in ["None",""] else int(str(request_args['chunk_overlap'])) 
+    max_prompt_count_limit=30000 if str(request_args['max_prompt_count_limit']) in ["None",""] else int(str(request_args['max_prompt_count_limit'])) 
     # # except Exception as e: 
     # if 1==1:
     #         # project_id= 'nine-quality-test' 
@@ -166,11 +167,10 @@ def chunk_bq_content(request):
     client = bigquery.Client(project_id)    
     #create data set if does not exist
     create_dataset(project_id,dataset_id,region)
-    max_index=30000 #maximum number of requests in a batch
- 
-    max_index=2
+    max_index=max_prompt_count_limit #maximum number of requests in a batch
     record_count=0
     prefix=f"{table}_{request_date}" 
+    job_list=[]
     for idx, split in enumerate(doc_splits):
             split.metadata["process_time"]=now
             if prev==split.metadata["id"]:
@@ -200,7 +200,7 @@ def chunk_bq_content(request):
             if (idx+1) % max_index==0:
                
                 #create table new if does not exist
-                table=f"{table}_{request_id}"
+                table=f"{prefix}_{version}"
                 table_schema=create_table(project_id,dataset_id,table)
                 #push the data into the table
                 table_id = f"{project_id}.{dataset_id}.{table}"
@@ -213,5 +213,6 @@ def chunk_bq_content(request):
                 #moving to next batch
                 record_count=record_count+len(rows_to_insert)
                 rows_to_insert=[]
-    
-    return {'status':'SUCCESS', 'record_count':record_count, 'count_of_tables':version+1, 'table_name_prefix':prefix}
+                job_list.append(job.job_id)
+  
+    return {'status':'SUCCESS', 'record_count':record_count,'count_of_tables':version+1,'table_name_prefix':prefix,'jobs':job_list }
