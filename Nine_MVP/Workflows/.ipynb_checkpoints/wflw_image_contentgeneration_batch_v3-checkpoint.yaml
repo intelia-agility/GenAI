@@ -128,8 +128,7 @@ main:
             prefix: ${REQUEST_FOLDER}
         result: list_result
    
-    
-   
+
    # Step 5: loop over request files and genearte batch request for them
    # each file can only be 30,000 request
     - loop_over_request_files:
@@ -190,7 +189,6 @@ main:
                         result: listResult
                     
                     # Step 9: check the job status if succeeded or failed return
-                    #Move the request file to processed if successfully executed
                     - checkIfDone: 
                         switch:
                               - condition: ${listResult.state=="JOB_STATE_SUCCEEDED"}
@@ -202,23 +200,6 @@ main:
                                                 state: "JOB_STATE_SUCCEEDED" 
                                                 request_file: ${source_file}
                                             - BATCH_OUTPUS: ${list.concat(BATCH_OUTPUS,out_result)}
-
-                                    - set_request_file_detail_to_move:
-                                        assign:
-                                            - object:
-                                                source_bucket:  ${DESTINATION_BUCKET}
-                                                destination_bucket: ${DESTINATION_BUCKET}
-                                                source_object:  ${item.name}
-                                                destination_object:  ${text.replace_all(item.name, REQUEST_FOLDER,PROCESSED_REQUEST_FOLDER)}  
-
-                                    - move_request_file_toprocessed:
-                                        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
-                                        args:
-                                            workflow_id: "wflw_cleanup_processed_objects"
-                                            location: ${LOCATION}
-                                            project_id: ${PROJECT}
-                                            argument: ${object }
-                                        result: runResult
                                 next: log_job_execution
 
                               - condition: ${listResult.state=="JOB_STATE_FAILED"}

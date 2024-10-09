@@ -1,0 +1,30 @@
+# This  workflow is created for cleanup process
+main:
+    params: [input] 
+    steps:
+        - check_input_parameter:
+            switch:
+                # Move one object
+                - condition: ${("source_object"  in input)}
+                  steps:
+                        - copyFile:
+                            call: googleapis.storage.v1.objects.copy
+                            args:
+                                sourceBucket: ${input.source_bucket}
+                                sourceObject: ${text.url_encode(input.source_object)}  
+                                destinationBucket: ${input.destination_bucket}
+                                destinationObject: ${text.url_encode(input.destination_object)} 
+                            result: copyResult
+
+                        # Step 2: Delete the original file from the source location
+                        - deleteOriginalFile:
+                            call: googleapis.storage.v1.objects.delete
+                            args:
+                                bucket: ${input.source_bucket}
+                                object: ${text.url_encode(input.source_object)}   
+                            result: deleteResult
+
+                        # Step 3: Return success message
+                        - returnSuccess:
+                            return: "File moved successfully "
+                   
