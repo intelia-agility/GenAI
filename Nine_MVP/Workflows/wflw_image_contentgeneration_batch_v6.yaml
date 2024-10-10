@@ -21,8 +21,7 @@ main:
             
             - REQUEST_FILE_PREFIX: "image_request"
             - REQUEST_FOLDER: "image_batch_request_fldr"
-            - PROCESSED_REQUEST_FOLDER: "processed_image_batch_request_fldr"
-            - ERROR_PROCESSED_REQUEST_FOLDER: "error_image_batch_request_fldr"
+            - PROCESSED_REQUEST_FOLDER: "image_batch_request_fldr_processed"
             - BATCH_PREDICTION_FOLDER: "image_batch_prediction_fldr_out"
             - BATCH_OUTPUT: []
                  
@@ -70,7 +69,9 @@ main:
             as: e
             steps:
                 #  If no file exists, generate new request file(s)
-                 - handle_error: 
+                - ret1:
+                     return: ${e}
+                - handle_error: 
                     switch:
                         - condition: ${e.code == 404}
                           steps:
@@ -200,20 +201,23 @@ main:
                                                 output_dir: "${listResult.outputInfo.gcsOutputDirectory}"
                                                 state: "JOB_STATE_SUCCEEDED" 
                                                 request_file: ${source_file}
-                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}                                   
+                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}
 
-                                    - move_request_file_to_processed:
+                                    - set_request_file_detail_to_move:
+                                        assign:
+                                            - object:
+                                                source_bucket:  ${DESTINATION_BUCKET}
+                                                destination_bucket: ${DESTINATION_BUCKET}
+                                                source_object:  ${item.name}
+                                                destination_object:  ${text.replace_all(item.name, REQUEST_FOLDER,PROCESSED_REQUEST_FOLDER)}  
+
+                                    - move_request_file_toprocessed:
                                         call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
                                         args:
                                             workflow_id: "wflw_cleanup_processed_objects"
                                             location: ${LOCATION}
                                             project_id: ${PROJECT}
-                                            argument: {
-                                                source_bucket:  "${DESTINATION_BUCKET}",
-                                                destination_bucket: "${DESTINATION_BUCKET}",
-                                                source_object: "${item.name}",
-                                                destination_object:  "${text.replace_all(item.name, REQUEST_FOLDER,PROCESSED_REQUEST_FOLDER)}"
-                                                      }
+                                            argument: ${object }
                                         result: runResult
                                 next: log_job_execution
 
@@ -225,22 +229,7 @@ main:
                                                 output_dir: ""
                                                 state: "JOB_STATE_FAILED"
                                                 request_file: ${source_file}
-                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}
-
-                                    - move_request_file_to_processed_error:
-                                        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
-                                        args:
-                                            workflow_id: "wflw_cleanup_processed_objects"
-                                            location: ${LOCATION}
-                                            project_id: ${PROJECT}
-                                            argument: {
-                                                source_bucket:  "${DESTINATION_BUCKET}",
-                                                destination_bucket: "${DESTINATION_BUCKET}",
-                                                source_object: "${item.name}",
-                                                destination_object:  "${text.replace_all(item.name, REQUEST_FOLDER,ERROR_PROCESSED_REQUEST_FOLDER)}"
-                                                      }
-                                        result: runResult
-
+                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)} 
                                 next: log_job_execution
 
                     # Step 10: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
