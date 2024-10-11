@@ -17,14 +17,14 @@ class VideoResponse(BaseModel):
 
 @app.post("/get-video-duration", response_model=VideoResponse)
 async def get_video_duration(request: VideoRequest):
-    """"
+    """
     get video duration of a given gcs url
     
-    """"
+    """
     
     fs = gcsfs.GCSFileSystem()
     # Open the file stream using gcsfs
-    with fs.open(gcsuri, 'rb') as video_file:
+    with fs.open(request.url, 'rb') as video_file:
               # Use pymediainfo to extract metadata directly from the stream
               media_info = MediaInfo.parse(video_file)
               for track in media_info.tracks:
