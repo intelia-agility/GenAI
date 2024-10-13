@@ -37,10 +37,11 @@ main:
                                 If you are not sure about any info, please do not make it up. Do not add any extra text to the output."
 
             - TEMPERATURE: 0.5
-            - MAX_OUT_TOKENS: 2048
+            - MAX_OUT_TOKENS: 8192
             - TOP_P: 0.8
             - TOP_K: 40
             - REQUEST_CONTENT: 'image'
+            - MAX_REQUEST_PER_FILE: 30000
 
 
 
@@ -79,11 +80,10 @@ main:
                                     
     
     # Step 2: If no request file exists, create new request file(s)
-
     - genearte_batch_request_file:
         call: http.post
         args:
-            url: ${FUNC_CREATE_GCS_BATCH_REQUEST}
+            url:  ${FUNC_CREATE_GCS_BATCH_REQUEST}
             query:
                 name: "GENERATE BATCH REQUEST FILE FOR IMAGE"            
                 destination_bucket: ${DESTINATION_BUCKET}
@@ -98,6 +98,7 @@ main:
                 top_k: ${TOP_K}
                 request_content: ${REQUEST_CONTENT}
                 media_types: ${MEDIA_TYPES}
+                max_request_per_file: ${MAX_REQUEST_PER_FILE}
         result:  request_file_res
 
     

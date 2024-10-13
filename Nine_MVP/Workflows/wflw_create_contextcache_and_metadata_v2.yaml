@@ -29,7 +29,6 @@ main:
             - MODEL : ${"projects/"+project+"/locations/"+location+"/"+ model}
             - CACHED_CONTENT_ENDPOINT: ${"https://"+ location +"-aiplatform.googleapis.com/v1beta1/projects/"+ project+"/locations/"+location+"/cachedContents"}
             - CASHED_MEDIA_LIST : []
-            - FUNC_GET_VIDEO_DURATION_ENDPOINT: "https://getvideodurationservice-494586852359.us-central1.run.app/get-video-duration"
 
     - get_media_files:
         call: googleapis.storage.v1.objects.list
@@ -90,18 +89,6 @@ main:
                     assign:
                         - mime_type: ${item.contentType}
                         - gcs_uri: ${"gs://"+source_bucket+"/"+item.name} 
-                
-              
-                - get_video_duration:
-                    call: http.post
-                    args:
-                        url: ${FUNC_GET_VIDEO_DURATION_ENDPOINT}
-                        headers:
-                           Content-Type: "application/json"
-                        body:
-                           url: ${gcs_uri}
-
-                    result:  video_duration_result
             
                 - create_media_context_cache:  
                                 call: http.post
@@ -144,7 +131,6 @@ main:
                                     name: "${llm_response.body.name}"
                                     updateTime: "${llm_response.body.updateTime}"
                                     usageMetadata: "${llm_response.body.usageMetadata}"
-                                    videoOriginalDurationSecond: "${video_duration_result.body.duration}"
 
                         - CASHED_MEDIA_LIST: ${list.concat(CASHED_MEDIA_LIST,cache_detail)} 
 
