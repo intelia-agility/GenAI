@@ -1,0 +1,2 @@
+gcloud workflows deploy test_20241014 --source=test_20241014.yaml\
+ --env-vars-file en_vars.yaml
