@@ -27,9 +27,14 @@ main:
             - SLEEP_BETWEEN_SEGMENTS: 30
             - MULTIMODAL_EMBEDDING_FOLDER: "video_multimodal_embedding_fldr_out" #main folder name 
             - MULTIMODAL_EMBEDDING_FOLDER_JOB: ${"video_multimodal_embedding_"+  time.format( sys.now())} #this execution folder name
-            - OUTPUT_FILE_NAME: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+"video_multimodal_embeddings.json"}
-            - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+OUTPUT_FILE_NAME}  
+            - OUTPUT_FILE_NAME: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+"video_multimodal_embeddings"}
+            - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB}  
 
+
+ 
+    
+    
+    
     # Step 2: List objects in the GCS bucket
     - list_files:
         call: googleapis.storage.v1.objects.list
@@ -62,10 +67,12 @@ main:
                               steps:
                                         - add_matching_item_to_filetered_list:
                                             assign:                                             
-                                                - video_uri: ${"gs://"+SOURCE_BUCKET+"/"+item.name} 
-                                                - video_uri_map: {"gcs_uri": "${video_uri}", "mime_type": "${item.contentType}"}                                    
-                                                - item: ${map.merge(item, video_uri_map)}                                               
-                                                - filetered_files: ${list.concat(filetered_files,item)}
+                                                - video_uri: ${"gs://"+SOURCE_BUCKET+"/"+item.name}                                                                                    
+                                                - length:  ${len(text.split(item.name, "/"))}    
+                                                - video_name: ${text.split(item.name, "/")[length-1]}  
+                                                - video_name: ${text.replace_all(video_name, ".mp4","") }                                           
+                                                - video_uri_map: {"gcs_uri": "${video_uri}", "mime_type": "${item.contentType}", "video_name": "${video_name}"}                                          
+                                                - filetered_files: ${list.concat(filetered_files,video_uri_map)}
     
   
     - log_filter_medias:
@@ -98,7 +105,7 @@ main:
                     - set_start_offeset:
                         assign:
                             - prev: 0
-                            - segment_length: ${SEGMENT_LENGTH}
+                           
                             - video_duration: ${video_duration_result.body.duration}
                             - video_gcs_uri: ${item.gcs_uri}
 
@@ -109,7 +116,7 @@ main:
                             - init_vars:
                                 assign:                                  
                                       - startOffset: ${prev}
-                                      - endOffset:  ${prev+segment_length}
+                                      - endOffset:  ${prev+SEGMENT_LENGTH}
                             #Step 7-2: If end offset is exceeding video duration, set it to video duration
                             - check_endOffset:
                                  switch:
@@ -133,7 +140,7 @@ main:
                                                          mimeType:  "${item.mime_type}",
                                                         "gcsUri": "${item.gcs_uri}" ,
                                                         videoSegmentConfig: {
-                                                            "intervalSec": "${segment_length}",
+                                                            "intervalSec": "${SEGMENT_LENGTH}",
                                                             "startOffsetSec": "${startOffset}",
                                                             "endOffsetSec": "${endOffset}"
 
@@ -143,20 +150,25 @@ main:
                                                      } ]
  
                                     
-                                result: llm_response
+                                result: llm_response                       
 
-                            # Step 7-4: Add result to the output
-                            - add_to_output:
-                                    assign:                                    
-                                        - output:  {
-                                                    "intervalSec": "${segment_length}",
+                            # Step 7-4: Write the output into GCS
+                            - write_to_gcs:
+                                call: http.post
+                                args:
+                                    url: ${"https://storage.googleapis.com/upload/storage/v1/b/" + DESTINATION_BUCKET + "/o"}
+                                    auth:
+                                        type: OAuth2
+                                    query:
+                                        name: ${OUTPUT_FILE_NAME +"_"+"seg"+string(startOffset)+"_to_"+string(endOffset)+"_"+item.video_name+".json"}
+                                    body:
+                                        {"intervalSec": "${SEGMENT_LENGTH}",
                                                     "startOffsetSec": "${startOffset}",
                                                     "endOffsetSec": "${endOffset}",
                                                     "duration": "${video_duration}",
                                                     "gcs_uri": "${item.gcs_uri}",                                         
                                                     "llm_response": "${llm_response.body}"
                                                      }
-                                        - LST_OUTPUT: ${list.concat(LST_OUTPUT,output)}
                                    
                             # Step 7-5: Initialize vars to move to next segment
                             - assign_vars_move_next_segment:  
@@ -185,23 +197,9 @@ main:
                             call: sys.sleep
                             args:
                                 seconds: ${SLEEP_BETWEEN_VIDEOS}
-                              
-
-    
-    # Step 9: Write the output into GCS
-    - write_to_gcs:
-        call: http.post
-        args:
-            url: ${"https://storage.googleapis.com/upload/storage/v1/b/" + DESTINATION_BUCKET + "/o"}
-            auth:
-                type: OAuth2
-            query:
-                name: ${OUTPUT_FILE_NAME}
-            body:
-                 {"items": "${LST_OUTPUT}"}
         
     # Step 10: Return output
     - return_result:
-        return: [ {"status": "SUCCESS", "output_content": "${LST_OUTPUT}", "output_directory": "${OUTPUT_DIRECTORY}" }]
+        return: [ {"status": "SUCCESS", "output_directory": "${OUTPUT_DIRECTORY}" }]
    
  
