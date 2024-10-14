@@ -28,7 +28,7 @@ main:
             - SLEEP_BETWEEN_SEGMENTS: 30
             - MULTIMODAL_EMBEDDING_FOLDER: "video_multimodal_embedding_fldr_out" #main folder name 
             - MULTIMODAL_EMBEDDING_FOLDER_JOB: ${"video_multimodal_embedding_"+  time.format( sys.now())} #this execution folder name
-            - OUTPUT_FILE_NAME: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+"video_multimodal_embeddings"}
+            - OUTPUT_FILE_NAME: "video_multimodal_embeddings"
             - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB}  
 
 
@@ -160,8 +160,9 @@ main:
                                     url: ${"https://storage.googleapis.com/upload/storage/v1/b/" + DESTINATION_BUCKET + "/o"}
                                     auth:
                                         type: OAuth2
-                                    query:
-                                        name: ${OUTPUT_FILE_NAME +"_"+"seg"+string(startOffset)+"_to_"+string(endOffset)+"_"+item.video_name+".json"}
+                                    query:                                   
+
+                                        name: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+item.video_name+"/"+OUTPUT_FILE_NAME +"_"+"seg "+string(startOffset)+"_to_"+string(endOffset)+".json"}
                                     body:
                                         {"intervalSec": "${VIDEO_INTERVALS}",
                                                     "startOffsetSec": "${startOffset}",
