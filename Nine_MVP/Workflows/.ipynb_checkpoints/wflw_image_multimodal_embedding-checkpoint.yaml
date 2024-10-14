@@ -22,9 +22,10 @@ main:
             - NO_OF_CONCURRENT_EXECUSTIONS: 10       
             - SLEEP_BETWEEN_IMAGES: 120 # ${int(NO_OF_CONCURRENT_EXECUSTIONS) / int(API_VIDEO_PER_SECOND)}          
             - MULTIMODAL_EMBEDDING_FOLDER: "image_multimodal_embedding_fldr_out" #main folder name 
-            - MULTIMODAL_EMBEDDING_FOLDER_JOB: ${"image_multimodal_embedding_"+  time.format( sys.now())} #this execution folder name
-            - OUTPUT_FILE_NAME: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+"image_multimodal_embeddings"}
+            - MULTIMODAL_EMBEDDING_FOLDER_JOB: ${"image_multimodal_embedding_"+  time.format( sys.now())} #this execution folder name  
+            - OUTPUT_FILE_NAME: "image_multimodal_embeddings"
             - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB}  
+
 
     # Step 2: List objects in the GCS bucket
     - list_files:
@@ -113,7 +114,7 @@ main:
                                 auth:
                                         type: OAuth2
                                 query:
-                                        name: ${OUTPUT_FILE_NAME +"_"+item.image_name+".json"}
+                                        name: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+item.image_name+"/"+OUTPUT_FILE_NAME +".json"}                                   
                                 body:
                                         {"gcs_uri": "${item.gcs_uri}",                                         
                                           "llm_response": "${llm_response.body}"
