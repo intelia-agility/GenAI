@@ -20,7 +20,8 @@ main:
             - MEDIA_TYPES: ["video/mp4"]   
             - FUNC_GET_VIDEO_DURATION_ENDPOINT: ${"https://getvideodurationservice-"+PROJECT_NUMBER+".us-central1.run.app/get-video-duration"}
             - SOURCE_VIDEO_FOLDER: "vlt_video_extract/OTHERS"
-            - SEGMENT_LENGTH: 16
+            - SEGMENT_LENGTH: 120
+            - VIDEO_INTERVALS : 16
             - NO_OF_CONCURRENT_EXECUSTIONS: 10
             #- API_VIDEO_PER_SECOND: 5
             - SLEEP_BETWEEN_VIDEOS: 120 # ${int(NO_OF_CONCURRENT_EXECUSTIONS) / int(API_VIDEO_PER_SECOND)}
@@ -140,7 +141,7 @@ main:
                                                          mimeType:  "${item.mime_type}",
                                                         "gcsUri": "${item.gcs_uri}" ,
                                                         videoSegmentConfig: {
-                                                            "intervalSec": "${SEGMENT_LENGTH}",
+                                                            "intervalSec": "${VIDEO_INTERVALS}",
                                                             "startOffsetSec": "${startOffset}",
                                                             "endOffsetSec": "${endOffset}"
 
@@ -162,7 +163,7 @@ main:
                                     query:
                                         name: ${OUTPUT_FILE_NAME +"_"+"seg"+string(startOffset)+"_to_"+string(endOffset)+"_"+item.video_name+".json"}
                                     body:
-                                        {"intervalSec": "${SEGMENT_LENGTH}",
+                                        {"intervalSec": "${VIDEO_INTERVALS}",
                                                     "startOffsetSec": "${startOffset}",
                                                     "endOffsetSec": "${endOffset}",
                                                     "duration": "${video_duration}",
