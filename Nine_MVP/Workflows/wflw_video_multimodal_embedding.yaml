@@ -14,13 +14,13 @@ main:
             - MM_METHOD: "predict"
             - MM_LLM_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/publishers/google/models/" + MM_MODEL+":"+MM_METHOD}
  
-            - LST_OUTPUT: []
-            - SOURCE_BUCKET: "raw_nine_files"  # ${sys.get_env("SOURCE_BUCKET_NAME")}
-            - DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"
+          
+            - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}
+            - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")}
             - MEDIA_TYPES: ["video/mp4"]   
             - FUNC_GET_VIDEO_DURATION_ENDPOINT: ${"https://getvideodurationservice-"+PROJECT_NUMBER+".us-central1.run.app/get-video-duration"}
             - SOURCE_VIDEO_FOLDER: "vlt_video_extract/OTHERS"
-            - SEGMENT_LENGTH: 120
+            - SEGMENT_LENGTH: 16
             - NO_OF_CONCURRENT_EXECUSTIONS: 10
             #- API_VIDEO_PER_SECOND: 5
             - SLEEP_BETWEEN_VIDEOS: 120 # ${int(NO_OF_CONCURRENT_EXECUSTIONS) / int(API_VIDEO_PER_SECOND)}
@@ -83,7 +83,7 @@ main:
     # Step 4: extract video embeddings                             
     - extract_video_mm_embeddings:
         parallel:
-            shared: [LST_OUTPUT]
+           # shared: [LST_OUTPUT]
             concurrency_limit: ${NO_OF_CONCURRENT_EXECUSTIONS}
             for:
                 value: item

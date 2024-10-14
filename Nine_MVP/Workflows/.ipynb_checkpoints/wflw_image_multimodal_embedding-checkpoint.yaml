@@ -14,7 +14,6 @@ main:
             - MM_METHOD: "predict"
             - MM_LLM_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/publishers/google/models/" + MM_MODEL+":"+MM_METHOD}
  
-            - LST_OUTPUT: []
             - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}
             - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")}
             - MEDIA_TYPES: ["image/jpeg","image/png"]   
@@ -24,8 +23,8 @@ main:
             - SLEEP_BETWEEN_IMAGES: 120 # ${int(NO_OF_CONCURRENT_EXECUSTIONS) / int(API_VIDEO_PER_SECOND)}          
             - MULTIMODAL_EMBEDDING_FOLDER: "image_multimodal_embedding_fldr_out" #main folder name 
             - MULTIMODAL_EMBEDDING_FOLDER_JOB: ${"image_multimodal_embedding_"+  time.format( sys.now())} #this execution folder name
-            - OUTPUT_FILE_NAME: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+"image_multimodal_embeddings.json"}
-            - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+OUTPUT_FILE_NAME}  
+            - OUTPUT_FILE_NAME: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+"image_multimodal_embeddings"}
+            - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB}  
 
     # Step 2: List objects in the GCS bucket
     - list_files:
@@ -58,11 +57,15 @@ main:
                             - condition: ${item.contentType in media_types}  
                               steps:
                                         - add_matching_item_to_filetered_list:
-                                            assign:                                             
+                                            assign:    
+                                            
                                                 - image_uri: ${"gs://"+SOURCE_BUCKET+"/"+item.name} 
-                                                - image_uri_map: {"gcs_uri": "${image_uri}", "mime_type": "${item.contentType}"}                                    
-                                                - item: ${map.merge(item, image_uri_map)}                                               
-                                                - filetered_files: ${list.concat(filetered_files,item)}
+                                                - length:  ${len(text.split(item.name, "/"))}  
+                                                - image_name: ${text.split(item.name, "/")[length-1]}  
+                                                - image_name: ${text.replace_all(image_name, ".jpeg","") } 
+                                                - image_name: ${text.replace_all(image_name, ".png","") }                                            
+                                                - image_uri_map: {"gcs_uri": "${image_uri}", "mime_type": "${item.contentType}", "image_name": "${image_name}"}                                                                               
+                                                - filetered_files: ${list.concat(filetered_files,image_uri_map)}
     
   
     - log_filter_medias:
@@ -73,7 +76,6 @@ main:
     # Step 4: extract image embeddings                             
     - extract_image_mm_embeddings:
         parallel:
-            shared: [LST_OUTPUT]
             concurrency_limit: ${NO_OF_CONCURRENT_EXECUSTIONS}
             for:
                 value: item
@@ -103,14 +105,19 @@ main:
                                                      } ]
                             result: llm_response
 
-                    # Step 7: Add result to the output
-                    - add_to_output:
-                             assign:                                    
-                                - output:  {                                            
-                                            "gcs_uri": "${item.gcs_uri}",                                         
-                                             "llm_response": "${llm_response.body}"
-                                             }
-                                - LST_OUTPUT: ${list.concat(LST_OUTPUT,output)}
+                    # Step 7: Write the output into GCS
+                    - write_to_gcs:
+                            call: http.post
+                            args:
+                                url: ${"https://storage.googleapis.com/upload/storage/v1/b/" + DESTINATION_BUCKET + "/o"}
+                                auth:
+                                        type: OAuth2
+                                query:
+                                        name: ${OUTPUT_FILE_NAME +"_"+item.image_name+".json"}
+                                body:
+                                        {"gcs_uri": "${item.gcs_uri}",                                         
+                                          "llm_response": "${llm_response.body}"
+                                        } 
 
                     - log_move_to_next_image:
                             call: sys.log
@@ -123,20 +130,10 @@ main:
                             args:
                                 seconds: ${SLEEP_BETWEEN_IMAGES}
     
-    # Step 9: Write the output into GCS
-    - write_to_gcs:
-        call: http.post
-        args:
-            url: ${"https://storage.googleapis.com/upload/storage/v1/b/" + DESTINATION_BUCKET + "/o"}
-            auth:
-                type: OAuth2
-            query:
-                name: ${OUTPUT_FILE_NAME}
-            body:
-                 {"items": "${LST_OUTPUT}"}
+  
         
-    # Step 10: Return output
+    # Step 9: Return output
     - return_result:
-        return: [ {"status": "SUCCESS", "output_content": "${LST_OUTPUT}", "output_directory": "${OUTPUT_DIRECTORY}" }]
+        return: [ {"status": "SUCCESS", "output_directory": "${OUTPUT_DIRECTORY}" }]
    
  
