@@ -20,7 +20,7 @@ main:
            
             - SOURCE_IMAGE_FOLDER: "2024"           
             - NO_OF_CONCURRENT_EXECUSTIONS: 10       
-            - SLEEP_BETWEEN_IMAGES: 120 # ${int(NO_OF_CONCURRENT_EXECUSTIONS) / int(API_VIDEO_PER_SECOND)}          
+            - SLEEP_BETWEEN_IMAGES: 10 # 10 secs         
             - MULTIMODAL_EMBEDDING_FOLDER: "image_multimodal_embedding_fldr_out" #main folder name 
             - MULTIMODAL_EMBEDDING_FOLDER_JOB: ${"image_multimodal_embedding_"+  time.format( sys.now())} #this execution folder name  
             - OUTPUT_FILE_NAME: "image_multimodal_embeddings"
@@ -28,6 +28,7 @@ main:
             
             - METADATA_DATASET: "vlt_metadata"
             - METADATA_TABLE: "vlt_image_metadata"
+            - METADATA_ERROR_TABLE: "vlt_image_error_metadata"
             - FUNC_LOAD_MEDIA_METADATA: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_media_metadata"}
             - BATCH_OUTPUT: []
 
@@ -41,6 +42,7 @@ main:
                 project_id: ${PROJECT}
                 dataset: ${METADATA_DATASET}
                 table: ${METADATA_TABLE} 
+                error_table: ${METADATA_ERROR_TABLE} 
                 region:  ${LOCATION}
                 source_bucket:  ${SOURCE_BUCKET}  
                 source_folder:  ${SOURCE_IMAGE_FOLDER}  
@@ -83,7 +85,7 @@ main:
                                     - bg_load_wait:
                                         call: sys.sleep
                                         args:
-                                            seconds: 120
+                                            seconds: 30
                                         next: get_bigquery_load_job_status                                 
     
     - log_chunking:
@@ -168,49 +170,85 @@ main:
                     - log_mediaMetadataInfo:
                             call: sys.log
                             args:
-                               text: ${"Media Metadata Is Set- "+metadata_map.media_name}
+                               text: ${"Media Metadata Is Set- "+metadata_map.media_name}                    
 
-                    #Step 6-4: Call multimodal embedding
-                    - ask_llm:
-                            call: http.post
-                            args:
-                                url: ${MM_LLM_ENDPOINT}
-                                auth:
-                                    type: OAuth2
-                                body:
-                                    "instances": [
-                                                    {
-                                                        "image": {
-                                                         mimeType:  "${metadata_map.mime_type}",
-                                                        "gcsUri": "${metadata_map.gcs_uri}"  
-                                                        }
+                    #Step 7: Set metadata info for current media
+                    - generate_multimodal_embeding:
+                        try:
+                            steps:
+                                #Step 7-1: Call multimodal embedding
+                                - ask_llm:
+                                        call: http.post
+                                        args:
+                                            url: ${MM_LLM_ENDPOINT}
+                                            auth:
+                                                type: OAuth2
+                                            body:
+                                                "instances": [
+                                                                {
+                                                                    "image": {
+                                                                    mimeType:  "${metadata_map.mime_type}",
+                                                                    "gcsUri": "${metadata_map.gcs_uri}"  
+                                                                    }
 
-                                                     } ]
-                            result: llm_response
+                                                                } ]
+                                        result: llm_response
 
-                    - log_llm:
-                            call: sys.log
-                            args:
-                               text: ${"Embedding Call Finished "+metadata_map.media_name}
+                                - log_llm:
+                                        call: sys.log
+                                        args:
+                                            text: ${"Embedding Call Finished "+metadata_map.media_name}
 
-                    # Step 6-5: Write the output into GCS
-                    - write_to_gcs:
-                            call: http.post
-                            args:
-                                url: ${"https://storage.googleapis.com/upload/storage/v1/b/" + DESTINATION_BUCKET + "/o"}
-                                auth:
-                                        type: OAuth2
-                                query:
-                                        name: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+metadata_map.media_name+"/"+OUTPUT_FILE_NAME +".json"}                                   
-                                body:
-                                        {"gcs_uri": "${metadata_map.gcs_uri}",                                         
-                                          "llm_response": "${llm_response.body}"
-                                        } 
+                                # Step 7-2: Write the output into GCS
+                                - write_to_gcs:
+                                        call: http.post
+                                        args:
+                                            url: ${"https://storage.googleapis.com/upload/storage/v1/b/" + DESTINATION_BUCKET + "/o"}
+                                            auth:
+                                                    type: OAuth2
+                                            query:
+                                                    name: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+metadata_map.media_name+"/"+OUTPUT_FILE_NAME +".json"}                                   
+                                            body:
+                                                    {"gcs_uri": "${metadata_map.gcs_uri}",                                         
+                                                    "llm_response": "${llm_response.body}"
+                                                    } 
 
-                    - log_wrtite_to_gcs:
-                            call: sys.log
-                            args:
-                               text: ${"Data Is Written In to GCS - " + metadata_map.media_name} 
+                                - log_wrtite_to_gcs:
+                                        call: sys.log
+                                        args:
+                                            text: ${"Data Is Written In to GCS - " + metadata_map.media_name} 
+
+                        except:
+                             as: e
+                             steps:
+                                    - create_metadata:
+                                        assign:                                         
+                                            - metadata:
+                                                gcs_uri: ${metadata_map.gcs_uri}
+                                                mime_type:  ${metadata_map.mime_type}
+                                                name: ${metadata_map.name}
+                                                media_name: ${metadata_map.media_name}
+                                                time: "${time.format(sys.now())}"
+                                                error: ${e.body.error.message}
+
+                                    - insert_metadata:
+                                        call: googleapis.bigquery.v2.tabledata.insertAll
+                                        args:
+                                            datasetId:  ${METADATA_DATASET}
+                                            projectId: ${PROJECT}
+                                            tableId: ${METADATA_ERROR_TABLE} 
+                                            body:
+                                                ignoreUnknownValues: True
+                                                rows:
+                                                    json: ${metadata}
+                                        result: insertResult
+
+                                    - logResults:
+                                            call: sys.log
+                                            args:
+                                               text: ${insertResult}
+
+                                                    
 
                      # Step 8: We can not constantly call the enpoint, wait after each call
                     - wait_between_images:
