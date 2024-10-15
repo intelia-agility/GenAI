@@ -16,7 +16,7 @@ main:
  
             - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}
             - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")}
-            - MEDIA_TYPES: ["image/jpeg","image/png"]   
+            - MEDIA_TYPES: "image/jpeg,image/png" #comma separated string 
            
             - SOURCE_IMAGE_FOLDER: "2024"           
             - NO_OF_CONCURRENT_EXECUSTIONS: 10       
@@ -25,70 +25,152 @@ main:
             - MULTIMODAL_EMBEDDING_FOLDER_JOB: ${"image_multimodal_embedding_"+  time.format( sys.now())} #this execution folder name  
             - OUTPUT_FILE_NAME: "image_multimodal_embeddings"
             - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB}  
+            
+            - METADATA_DATASET: "vlt_metadata"
+            - METADATA_TABLE: "vlt_image_metadata"
+            - FUNC_LOAD_MEDIA_METADATA: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_media_metadata"}
+            - BATCH_OUTPUT: []
 
-
-    # Step 2: List objects in the GCS bucket
-    - list_files:
-        call: googleapis.storage.v1.objects.list
+     #Step 1: Load media metadata into  big query table
+    - load_media_metadata:
+        call: http.post
         args:
-          bucket: ${SOURCE_BUCKET}
-          prefix: ${SOURCE_IMAGE_FOLDER}
-        result: list_result
+            url: ${FUNC_LOAD_MEDIA_METADATA}
+            query:
+                name: "LOAD METADATA"            
+                project_id: ${PROJECT}
+                dataset: ${METADATA_DATASET}
+                table: ${METADATA_TABLE} 
+                region:  ${LOCATION}
+                source_bucket:  ${SOURCE_BUCKET}  
+                source_folder:  ${SOURCE_IMAGE_FOLDER}  
+                media_types:  ${MEDIA_TYPES}                 
+              
+        result:  metadata_load_result
 
-    - log_list_files:
-            call: sys.log
-            args:
-                text: "List Of files Loaded From GCP Storage"
+    #Step 2: Check if data is loaded into bigquery successfully
+    # exit the workflow and return failure even if one load job is faile
+    - check_bigquery_load:
+        for:
+           value: job_id
+           in: ${metadata_load_result.body.jobs}
+           steps:
+                 #Step 3: Get job state
+                - get_bigquery_load_job_status:
+                    call:  googleapis.bigquery.v2.jobs.get 
+                    args:
+                        jobId: ${job_id}
+                        projectId: ${PROJECT}
+                        location : ${LOCATION}     
+                    result: load_job_result
+                
+                 # Step 4: check the if load is done sucessfully for all jobs, otherwise exit
+                - checkIfLoadDone: 
+                        switch:
+                              - condition: ${load_job_result.status.state=="DONE" and "errors" in load_job_result.status}
+                                steps:
+                                    - return_load_failure:
+                                        assign:
+                                            - out_result:
+                                                output_table: ""
+                                                state: "BIGQUERY LOAD FAILED- CHECK THE LOGS"                                          
+                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}
+                                    - exit:
+                                        return: ${BATCH_OUTPUT}
 
-  
-    # Step 3: Filter only videos    
-    - filter_medias:
-        steps:
-          - assignList:
-              assign:
-                  - media_types: ${MEDIA_TYPES}
-                  - filetered_files: []
-          - loopList:
-              for:
-                  value: item
-                  in: ${list_result.items}
-                  steps:
-                      - check_matching: 
-                          switch:                        
-                            - condition: ${item.contentType in media_types}  
-                              steps:
-                                        - add_matching_item_to_filetered_list:
-                                            assign:    
-                                            
-                                                - image_uri: ${"gs://"+SOURCE_BUCKET+"/"+item.name} 
-                                                - length:  ${len(text.split(item.name, "/"))}  
-                                                - image_name: ${text.split(item.name, "/")[length-1]}  
-                                                - image_name: ${text.replace_all(image_name, ".jpeg","") } 
-                                                - image_name: ${text.replace_all(image_name, ".png","") }                                            
-                                                - image_uri_map: {"gcs_uri": "${image_uri}", "mime_type": "${item.contentType}", "image_name": "${image_name}"}                                                                               
-                                                - filetered_files: ${list.concat(filetered_files,image_uri_map)}
+                              - condition:  ${load_job_result.status.state in ["PENDING", "RUNNING"] and  not( "errors" in load_job_result.status)}
+                                steps:
+                                    - bg_load_wait:
+                                        call: sys.sleep
+                                        args:
+                                            seconds: 120
+                                        next: get_bigquery_load_job_status                                 
     
-  
-    - log_filter_medias:
-            call: sys.log
-            args:
-                text: ${"Medias Are Filtered-" + string(len(filetered_files))}
+    - log_chunking:
+        call: sys.log
+        args:
+          text: ${"Media Metadata Is Loaded - " + "Count of Created Tables "+ string(metadata_load_result.body.count_of_tables)}
 
-    # Step 4: extract image embeddings                             
+
+
+    #Step 3: Get media count
+    - get_media_count:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${"SELECT COUNT(*) AS media_count FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` LIMIT 1"}
+            useLegacySql: false
+        result: media_count_response
+
+    #Step 4: Get media count
+    - set_media_count:
+        assign:
+            - media_count: ${int(media_count_response.rows[0].f[0]["v"])-1}
+
+    - log_media:
+        call: sys.log
+        args:
+          text: ${"Media Count Loaded - " +  string(media_count)}
+
+
+    #Step 5: Check media count. exit if no media
+    - checkIfNoMedia: 
+        switch:
+            - condition: ${media_count<0}
+              steps:
+                    - exitNoMedia:
+                        return: "No Media Found- Check The Media Folder"
+
+
+   #Step 6: Extract image multimodal embeddings
     - extract_image_mm_embeddings:
         parallel:
             concurrency_limit: ${NO_OF_CONCURRENT_EXECUSTIONS}
             for:
-                value: item
-                in: ${filetered_files}
+                value: idx
+                range: ${[0, media_count]}    
+              
                 steps:
+                    #Step 6-1: Set vars
+                    - init_mdeia_metadata:
+                        assign:
+                            - metadata_map: {}
 
-                     #Step 5: Initialize vars
-                    - set_start_offeset:
-                        assign:                          
-                            - image_gcs_uri: ${item.gcs_uri}
+                    #Step 6-2: Get media info feom bigquery
+                    - get_media_from_bq:
+                            call:  googleapis.bigquery.v2.jobs.query
+                            args:
+                                projectId: ${PROJECT}
+                                body:
+                                    query: ${"SELECT * FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` WHERE idx="+idx+" LIMIT 1"}                      
+                                    useLegacySql: false
+                            result: bq_response 
 
-                    #Step 6: Call multimodal embedding
+                    - log_mediaInfoLoad:
+                            call: sys.log
+                            args:
+                               text: ${"Media Info Loaded - "}
+
+                    #Step 6-3: Set metadata info for current media
+                    - set_metadata:
+                            for: 
+                                value: field
+                                index: filed_idx
+                                in: ${bq_response.schema.fields}
+                                steps:
+                                    - set_media_metadata:
+                                            assign:
+                                                - val: ${bq_response.rows[idx].f[filed_idx]["v"]}
+                                                - media_map: {"${field.name}" : "${val}"}
+                                                - metadata_map:  ${map.merge(metadata_map, media_map)} 
+
+                    - log_mediaMetadataInfo:
+                            call: sys.log
+                            args:
+                               text: ${"Media Metadata Is Set- "+metadata_map.media_name}
+
+                    #Step 6-4: Call multimodal embedding
                     - ask_llm:
                             call: http.post
                             args:
@@ -99,14 +181,19 @@ main:
                                     "instances": [
                                                     {
                                                         "image": {
-                                                         mimeType:  "${item.mime_type}",
-                                                        "gcsUri": "${item.gcs_uri}"  
+                                                         mimeType:  "${metadata_map.mime_type}",
+                                                        "gcsUri": "${metadata_map.gcs_uri}"  
                                                         }
 
                                                      } ]
                             result: llm_response
 
-                    # Step 7: Write the output into GCS
+                    - log_llm:
+                            call: sys.log
+                            args:
+                               text: ${"Embedding Call Finished "+metadata_map.media_name}
+
+                    # Step 6-5: Write the output into GCS
                     - write_to_gcs:
                             call: http.post
                             args:
@@ -114,25 +201,23 @@ main:
                                 auth:
                                         type: OAuth2
                                 query:
-                                        name: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+item.image_name+"/"+OUTPUT_FILE_NAME +".json"}                                   
+                                        name: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+metadata_map.media_name+"/"+OUTPUT_FILE_NAME +".json"}                                   
                                 body:
-                                        {"gcs_uri": "${item.gcs_uri}",                                         
+                                        {"gcs_uri": "${metadata_map.gcs_uri}",                                         
                                           "llm_response": "${llm_response.body}"
                                         } 
 
-                    - log_move_to_next_image:
+                    - log_wrtite_to_gcs:
                             call: sys.log
                             args:
-                               text: ${"Embedding Is Calculated For - " + image_gcs_uri} 
+                               text: ${"Data Is Written In to GCS - " + metadata_map.media_name} 
 
                      # Step 8: We can not constantly call the enpoint, wait after each call
                     - wait_between_images:
                             call: sys.sleep
                             args:
                                 seconds: ${SLEEP_BETWEEN_IMAGES}
-    
-  
-        
+
     # Step 9: Return output
     - return_result:
         return: [ {"status": "SUCCESS", "output_directory": "${OUTPUT_DIRECTORY}" }]
