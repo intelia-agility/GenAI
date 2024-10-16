@@ -1,0 +1,27 @@
+# This is a  the workflow to delte context cache
+main:
+     
+    steps:
+        #Step 1: initialize variables
+        - init: 
+            assign:
+                - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+                - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}      
+                - FUNC_DELETE_CONTEXT_CACHE: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_delete_context_cache"}
+
+
+        #Step 2:  Delete context caches
+        - delete_context_cache:
+            call: http.post
+            args:
+                url: ${FUNC_DELETE_CONTEXT_CACHE}
+                query:
+                    name: "DELETE CONTEXT CACHE"           
+               
+            result:  delete_result
+
+        #Step 3:  Delete context caches
+        - return_result:
+            return: ${delete_result}
+         
+        
