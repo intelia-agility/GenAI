@@ -169,15 +169,7 @@ def get_media_metadata(request):
     source_folder= request_args['source_folder']
 
     media_types= [media.strip() for media in  str(request_args['media_types']).strip().replace("[",''). replace(']','').replace("'",'').split(',')]
-
-    if request_args and 'video_landing_table' in request_args:
-        #we are processing videos; create a landing for videos
-        video_landing_table= request_args['video_landing_table']
-        if video_landing_table.strip()!="" and  video_landing_table.strip().lower()!="none":
-             _=create_video_landing(project_id,dataset_id,video_landing_table)
-    else:
-      temperature=1
-
+  
 
     # Initialize a storage client
     storage_client = storage.Client()
@@ -193,8 +185,18 @@ def get_media_metadata(request):
     now = datetime.now()  
     rows_to_insert=[]        
     client = bigquery.Client(project_id)    
+   
     #create data set if does not exist
     create_dataset(project_id,dataset_id,region)
+    
+    #create video landingtable
+    if request_args and 'video_landing_table' in request_args:
+        #we are processing videos; create a landing for videos
+        video_landing_table= request_args['video_landing_table']
+        if video_landing_table.strip()!="" and  video_landing_table.strip().lower()!="none":
+             _=create_video_landing(project_id,dataset_id,video_landing_table)
+     
+
 
     job_list=[]
     idx=0

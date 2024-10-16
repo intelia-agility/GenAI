@@ -36,7 +36,7 @@ main:
             - VIDEO_TABLE: "vlt_video_multimodal_embeddings"
             #- METADATA_ERROR_TABLE: "vlt_image_error_metadata"
             - FUNC_LOAD_MEDIA_METADATA: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_media_metadata"}
-            - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
+            - OUTPUT_TABLE: ${METADATA_DATASET+"."+VIDEO_TABLE}
             - BATCH_OUTPUT: []
 
 
@@ -203,7 +203,7 @@ main:
                     - set_vars_for_video_loop:
                         assign:
                             - prev: 0
-                            - video_duration: 120 # ${math.floor(video_duration_result.body.duration)}                    
+                            - video_duration: ${math.floor(video_duration_result.body.duration)}                    
 
                     #Step 7: Loop over segments and call multimodal embeddings for each
                     - loop_over_video_segments:
