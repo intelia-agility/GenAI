@@ -77,8 +77,16 @@ def create_table(project_id,dataset_id,table_id):
         try:
             client.query(query).result()  # Make an API request.
             print(f"Table '{full_table_id}' dropped successfully.")
+
+            # Recreate the table
+            table = bigquery.Table(full_table_id, schema=schema)
+            # Create the table
+            table = client.create_table(table)  # Make an API request.
+            print(f"Table '{full_table_id}' created successfully.")
+
         except Exception as e:
-            print(f"Error dropping table '{full_table_id}': {e}")
+            print(f"Error dropping and recreating table '{full_table_id}': {e}")
+
     except :
         # If the table does not exist, create it
         table = bigquery.Table(full_table_id, schema=schema)
@@ -134,8 +142,15 @@ def create_video_landing(project_id,dataset_id,table_id):
         try:
             client.query(query).result()  # Make an API request.
             print(f"Table '{full_table_id}' dropped successfully.")
+
+            # Recreate the table
+            table = bigquery.Table(full_table_id, schema=schema)
+            # Create the table
+            table = client.create_table(table)  # Make an API request.
+            print(f"Table '{full_table_id}' created successfully.")
+
         except Exception as e:
-            print(f"Error dropping table '{full_table_id}': {e}")
+            print(f"Error dropping and recreating table '{full_table_id}': {e}")
     except :
         # If the table does not exist, create it
         table = bigquery.Table(full_table_id, schema=schema)
