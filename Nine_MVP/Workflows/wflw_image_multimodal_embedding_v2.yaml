@@ -18,7 +18,7 @@ main:
             - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")}
             - MEDIA_TYPES: "image/jpeg,image/png" #comma separated string 
            
-            - SOURCE_IMAGE_FOLDER: "2023/1/a"           
+            - SOURCE_IMAGE_FOLDER: "2024"           
             - NO_OF_CONCURRENT_EXECUSTIONS: 10       
             - SLEEP_BETWEEN_IMAGES: 10 # 10 secs         
             - MULTIMODAL_EMBEDDING_FOLDER: "image_multimodal_embedding_fldr_out" #main folder name 
@@ -26,11 +26,10 @@ main:
             - OUTPUT_FILE_NAME: "image_multimodal_embeddings"
             - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB}  
             
-            - METADATA_DATASET: "vlt_media_multimodal_embeddings_prelanding"
-            - METADATA_TABLE: "vlt_image_multimodal_embeddings"
-            #- METADATA_ERROR_TABLE: "vlt_image_error_metadata"
+            - METADATA_DATASET: "vlt_metadata"
+            - METADATA_TABLE: "vlt_image_metadata"
+            - METADATA_ERROR_TABLE: "vlt_image_error_metadata"
             - FUNC_LOAD_MEDIA_METADATA: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_media_metadata"}
-            - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
             - BATCH_OUTPUT: []
 
      #Step 1: Load media metadata into  big query table
@@ -43,7 +42,7 @@ main:
                 project_id: ${PROJECT}
                 dataset: ${METADATA_DATASET}
                 table: ${METADATA_TABLE} 
-                #error_table: ${METADATA_ERROR_TABLE} 
+                error_table: ${METADATA_ERROR_TABLE} 
                 region:  ${LOCATION}
                 source_bucket:  ${SOURCE_BUCKET}  
                 source_folder:  ${SOURCE_IMAGE_FOLDER}  
@@ -114,7 +113,7 @@ main:
     - log_media:
         call: sys.log
         args:
-          text: ${"Media Count Loaded - " +  string(media_count+1)}
+          text: ${"Media Count Loaded - " +  string(media_count)}
 
 
     #Step 5: Check media count. exit if no media
@@ -146,7 +145,7 @@ main:
                             args:
                                 projectId: ${PROJECT}
                                 body:
-                                    query: ${"SELECT name,mime_type,gcs_uri,media_name FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` WHERE idx="+idx+" LIMIT 1"}                      
+                                    query: ${"SELECT * FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` WHERE idx="+idx+" LIMIT 1"}                      
                                     useLegacySql: false
                             result: bq_response 
 
@@ -164,7 +163,7 @@ main:
                                 steps:
                                     - set_media_metadata:
                                             assign:
-                                                - val: ${bq_response.rows[0].f[filed_idx]["v"]}
+                                                - val: ${bq_response.rows[idx].f[filed_idx]["v"]}
                                                 - media_map: {"${field.name}" : "${val}"}
                                                 - metadata_map:  ${map.merge(metadata_map, media_map)} 
 
@@ -217,59 +216,39 @@ main:
                                 - log_wrtite_to_gcs:
                                         call: sys.log
                                         args:
-                                            text: ${"Data Is Written In to GCS For- " + metadata_map.media_name} 
-
-                                # Step 7-3: Init variables to write into bq
-                                - create_prediction_response:
-                                        assign:  
-                                            - execution_time: "${time.format(sys.now())}"
-                                            - predictions:  "${llm_response.body}"
- 
-                                # Step 7-4: Write the output into bq as well
-                                - load_data_into_bq:
-                                        call: googleapis.bigquery.v2.jobs.query 
-                                        args:
-                                            projectId: ${PROJECT}
-                                            body:
-                                               
-                                                query: ${"UPDATE `"+METADATA_DATASET+"."+ METADATA_TABLE+"` SET predictions = JSON'" +json.encode_to_string(predictions) +"', time='"+ execution_time+"'   WHERE gcs_uri = "+"'"+metadata_map.gcs_uri +"'"}
-                                                useLegacySql: false                                      
-                                        result: queryJob
-                                        
-                                - log_wrtite_to_bq:
-                                        call: sys.log
-                                        args:
-                                            text: ${"Data Is Written In to Bigquery Table - " + METADATA_TABLE +"-"+metadata_map.media_name} 
+                                            text: ${"Data Is Written In to GCS - " + metadata_map.media_name} 
 
                         except:
                              as: e
                              steps:
-                                   
-                                    - logerror:
+                                    - create_metadata:
+                                        assign:                                         
+                                            - metadata:
+                                                gcs_uri: ${metadata_map.gcs_uri}
+                                                mime_type:  ${metadata_map.mime_type}
+                                                name: ${metadata_map.name}
+                                                media_name: ${metadata_map.media_name}
+                                                time: "${time.format(sys.now())}"
+                                                error: ${e.body.error.message}
+
+                                    - insert_metadata:
+                                        call: googleapis.bigquery.v2.tabledata.insertAll
+                                        args:
+                                            datasetId:  ${METADATA_DATASET}
+                                            projectId: ${PROJECT}
+                                            tableId: ${METADATA_ERROR_TABLE} 
+                                            body:
+                                                ignoreUnknownValues: True
+                                                rows:
+                                                    json: ${metadata}
+                                        result: insertResult
+
+                                    - logResults:
                                             call: sys.log
                                             args:
-                                               text: ${e}
+                                               text: ${insertResult}
 
-                                    - create_error_response:
-                                        assign: 
-                                            - execution_time: "${time.format(sys.now())}"
-                                            - error: ${e}
-
-                                    # Step 7-5: Write the errors into bq as well
-                                    - load_errors_into_bq:
-                                            call: googleapis.bigquery.v2.jobs.query 
-                                            args:
-                                                projectId: ${PROJECT}
-                                                body:
-                                                
-                                                    query: ${"UPDATE `"+METADATA_DATASET+"."+ METADATA_TABLE+"` SET error = '" +json.encode_to_string(error) +"', time='"+ execution_time+"'   WHERE gcs_uri = "+"'"+metadata_map.gcs_uri +"'"}
-                                                    useLegacySql: false                                      
-                                            result: queryJob
-                                            
-                                    - log_wrtite_error_to_bq:
-                                            call: sys.log
-                                            args:
-                                                text: ${"Error Is Logged In to Bigquery Table - " + METADATA_TABLE +"-"+metadata_map.media_name} 
+                                                    
 
                      # Step 8: We can not constantly call the enpoint, wait after each call
                     - wait_between_images:
@@ -279,6 +258,6 @@ main:
 
     # Step 9: Return output
     - return_result:
-        return: [ {"status": "SUCCESS", "output_directory": "${OUTPUT_DIRECTORY}", "output_table":"${OUTPUT_TABLE}" }]
+        return: [ {"status": "SUCCESS", "output_directory": "${OUTPUT_DIRECTORY}" }]
    
  
