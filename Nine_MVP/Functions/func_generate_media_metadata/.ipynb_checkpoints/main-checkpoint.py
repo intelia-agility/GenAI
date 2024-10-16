@@ -36,7 +36,7 @@ def create_dataset(project_id,dataset_id,region_id):
 def create_table(project_id,dataset_id,table_id):
     
     """
-        Create a table 
+        Create a table for video/image metadata
         
         Args:
            str project_id: project id
@@ -89,6 +89,62 @@ def create_table(project_id,dataset_id,table_id):
         
     return schema
 
+def create_video_landing(project_id,dataset_id,table_id):
+    
+    """
+        Create a table for video landing
+        
+        Args:
+           str project_id: project id
+           str dataset_id: name of the dataset under which the table should be created.
+           str table_id:  name of the table.
+        Returns:
+            list[bigquery.SchemaField] schema: table schema- list of columns
+             
+    """
+        
+    
+    client = bigquery.Client(project_id)
+    
+    full_table_id = f"{project_id}.{dataset_id}.{table_id}"
+
+    # Define the table schema
+    schema = [
+     
+        bigquery.SchemaField("name", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("mime_type", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("gcs_uri", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("media_name", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("predictions", "JSON", mode="NULLABLE"),
+        bigquery.SchemaField("start_offset", "INTEGER", mode="REQUIRED"),
+        bigquery.SchemaField("end_offset", "INTEGER", mode="REQUIRED"),
+        bigquery.SchemaField("error", "STRING", mode="NULLABLE"),
+        bigquery.SchemaField("time", "STRING", mode="NULLABLE")
+    ]     
+
+    # Check if the table exists
+    try:
+        table = client.get_table(full_table_id)  # Make an API request.
+        print(f"Table '{full_table_id}' already exists.")
+        
+        # Drop the table if exist
+        query = f"DROP TABLE `{full_table_id}`"
+
+        # Execute the query
+        try:
+            client.query(query).result()  # Make an API request.
+            print(f"Table '{full_table_id}' dropped successfully.")
+        except Exception as e:
+            print(f"Error dropping table '{full_table_id}': {e}")
+    except :
+        # If the table does not exist, create it
+        table = bigquery.Table(full_table_id, schema=schema)
+
+        # Create the table
+        table = client.create_table(table)  # Make an API request.
+        print(f"Table '{full_table_id}' created successfully.")
+        
+    return schema
 
 @functions_framework.http
 def get_media_metadata(request):
@@ -111,8 +167,16 @@ def get_media_metadata(request):
     region= request_args['region']
     source_bucket= request_args['source_bucket']
     source_folder= request_args['source_folder']
-    #error_table= request_args['error_table']
+
     media_types= [media.strip() for media in  str(request_args['media_types']).strip().replace("[",''). replace(']','').replace("'",'').split(',')]
+
+    if request_args and 'video_landing_table' in request_args:
+        #we are processing videos; create a landing for videos
+        video_landing_table= request_args['video_landing_table']
+        if video_landing_table.strip()!="" and  video_landing_table.strip().lower()!="none":
+             _=create_video_landing(project_id,dataset_id,video_landing_table)
+    else:
+      temperature=1
 
 
     # Initialize a storage client
