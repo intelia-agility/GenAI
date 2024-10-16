@@ -49,10 +49,9 @@ main:
             - FUNC_LOAD_MEDIA_METADATA: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_media_metadata"}
             - OUTPUT_TABLE: ${METADATA_DATASET+"."+VIDEO_TABLE}
             - BATCH_OUTPUT: []
-            # just to initialize the prompt, defining START_OFFSET and END_OFFSET HERE
-            #- START_OFFSET: 0   
-            #prompt is moved into the segment loop, as it should be dynamically set
-            #- VIDEO_PROMPT_PREFIX: ${"Describe this video for the time period " + START_OFFSET+ " seconds to "+SEGMENT_LENGTH +" seconds. Focus on key themes, names of people who appeared and who are discussed and key locations. Give me at least 4000 words describing it."}
+         
+            #This will be added to the end of dynamic prompt. As prompt for each segment should be created dynamically.
+            - VIDEO_PROMPT_DETAILS: " Focus on key themes, names of people who appeared and who are discussed and key locations. Give me at least 4000 words describing it. \n Do not add any extra text to the description."
 
 
 
@@ -267,10 +266,8 @@ main:
                                 assign:                                  
                                       - startOffset: ${prev}
                                       - endOffset:  ${prev+SEGMENT_LENGTH}
-                                      - video_prompt: ${"Describe this video for the time period " + string(startOffset)+ " seconds to "+ string(endOffset) +" seconds. Focus on key themes, names of people who appeared and who are discussed and key locations. Give me at least 4000 words describing it. \n Do not add any extra text to the description."}
+                                      - video_prompt: ${"Describe this video for the time period " + string(startOffset)+ " seconds to "+ string(endOffset) +" seconds."+ VIDEO_PROMPT_DETAILS}
             
-
-
                             #Step 7-2: If end offset is exceeding video duration, set it to video duration
                             - check_endOffset:
                                  switch:
