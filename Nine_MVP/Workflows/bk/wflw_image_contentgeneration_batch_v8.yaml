@@ -10,7 +10,7 @@ main:
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
             - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")} 
             - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")} 
-            - SOURCE_IMAGE_FOLDER: "2023"
+            - SOURCE_IMAGE_FOLDER: "2024"
             
             - CONTENT_METHOD: "batchPredictionJobs" 
             - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+CONTENT_METHOD}
@@ -37,12 +37,46 @@ main:
                                 If you are not sure about any info, please do not make it up. Do not add any extra text to the output."
 
             - TEMPERATURE: 0.5
-            - MAX_OUT_TOKENS: 2048 # can go up to 8192
+            - MAX_OUT_TOKENS: 8192
             - TOP_P: 0.8
             - TOP_K: 40
             - REQUEST_CONTENT: 'image'
-            - MAX_REQUEST_PER_FILE: 25000 # up to 30000 max
+            - MAX_REQUEST_PER_FILE: 30000
 
+
+
+    # Step 1: List exisitng request files in the GCS bucket
+    # If there is any unprocessed file, process it; otherwise, create new request files
+    - list_request_files:
+        try:
+            steps:
+                - get_existing_request_files:
+                    call: googleapis.storage.v1.objects.list
+                    args:
+                        bucket: ${DESTINATION_BUCKET}
+                        prefix: ${REQUEST_FOLDER}
+                    result: list_result
+                - if_empty_folder:
+                    switch:
+                        - condition: ${ not ("items"  in list_result)}
+                          steps:
+                                - is_empty:   
+                                    next: genearte_batch_request_file
+                        - condition: ${"items"  in list_result}
+                          steps:
+                                - not_empty:   
+                                    next: loop_over_request_files
+                
+        except:           
+            as: e
+            steps:
+                #  If no file exists, generate new request file(s)
+                 - handle_error: 
+                    switch:
+                        - condition: ${e.code == 404}
+                          steps:
+                                - objectNotFound:  # Jump to this step if 404 error occurs
+                                    next: genearte_batch_request_file
                                     
     
     # Step 2: If no request file exists, create new request file(s)
