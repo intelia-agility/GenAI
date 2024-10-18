@@ -183,7 +183,7 @@ main:
                                     - out_result:
                                         output_dir: "${listResult.outputInfo.gcsOutputDirectory}"
                                         state: "JOB_STATE_SUCCEEDED" 
-                                        request_file:  ${"gs://"+DESTINATION_BUCKET+"/"+item.name}      
+                                        request_file:  ${item.gcs_uri}       
                                     - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}                                   
 
                         - move_request_file_to_processed:
@@ -195,8 +195,8 @@ main:
                                     argument: {
                                                 source_bucket:  "${DESTINATION_BUCKET}",
                                                 destination_bucket: "${DESTINATION_BUCKET}",
-                                                source_object: "${item.name}",
-                                                destination_object:  "${text.replace_all(item.name, REQUEST_FOLDER,PROCESSED_REQUEST_FOLDER)}"
+                                                source_object: "${item.gcs_uri}",
+                                                destination_object:  "${text.replace_all(item.gcs_uri, REQUEST_FOLDER,PROCESSED_REQUEST_FOLDER)}"
                                                       }                              
                                 next: log_job_execution
 
@@ -207,7 +207,7 @@ main:
                                 - out_result:
                                     output_dir: ""
                                     state: "JOB_STATE_FAILED"
-                                    request_file:  ${"gs://"+DESTINATION_BUCKET+"/"+item.name}      
+                                    request_file:  ${item.gcs_uri}     
                                 - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}
 
                         - move_request_file_to_processed_error:
@@ -219,8 +219,8 @@ main:
                                 argument: {
                                                 source_bucket:  "${DESTINATION_BUCKET}",
                                                 destination_bucket: "${DESTINATION_BUCKET}",
-                                                source_object: "${item.name}",
-                                                destination_object:  "${text.replace_all(item.name, REQUEST_FOLDER,ERROR_PROCESSED_REQUEST_FOLDER)}"
+                                                source_object: "${item.gcs_uri}",
+                                                destination_object:  "${text.replace_all(item.gcs_uri, REQUEST_FOLDER,ERROR_PROCESSED_REQUEST_FOLDER)}"
                                                       }
                             next: log_job_execution
 
