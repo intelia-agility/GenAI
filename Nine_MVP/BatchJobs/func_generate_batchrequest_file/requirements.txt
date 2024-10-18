@@ -1,7 +1,9 @@
 functions-framework==3.*
+flask
+google-cloud-storage
+functions-framework==3.*
 gcsfs
 pymediainfo
 mediainfo  
 fastapi==0.68.0
 uvicorn==0.15.0
- 
