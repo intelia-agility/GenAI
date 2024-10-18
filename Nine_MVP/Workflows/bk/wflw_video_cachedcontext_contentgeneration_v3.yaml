@@ -20,11 +20,13 @@ main:
             - MEDIA_TYPES: "video/mp4" #comma separated string   
             - FUNC_GET_VIDEO_DURATION_ENDPOINT: ${"https://getvideodurationservice-"+PROJECT_NUMBER+".us-central1.run.app/get-video-duration"}
             
-            - SOURCE_VIDEO_FOLDER: "VIDEOS"
-            - SEGMENT_LENGTH: 600           
-            - NO_OF_CONCURRENT_EXECUSTIONS: 10  
-            - SLEEP_BETWEEN_VIDEOS: 30 
-            - SLEEP_BETWEEN_SEGMENTS: 5
+            - SOURCE_VIDEO_FOLDER: "vlt_video_extract/OTHERS"
+            - SEGMENT_LENGTH: 120
+            - VIDEO_INTERVALS : 120
+            - NO_OF_CONCURRENT_EXECUSTIONS: 10
+            #- API_VIDEO_PER_SECOND: 5
+            - SLEEP_BETWEEN_VIDEOS: 120 # ${int(NO_OF_CONCURRENT_EXECUSTIONS) / int(API_VIDEO_PER_SECOND)}
+            - SLEEP_BETWEEN_SEGMENTS: 30
             - TEMPERATURE: 0.5
             - MAX_OUT_TOKENS: 8192
             - TOP_P: 0.8
@@ -36,7 +38,7 @@ main:
             - OUTPUT_FILE_NAME: "video_batch_prediction"
             - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+VIDEO_CONTENT_FOLDER+"/"+VIDEO_CONTENT_FOLDER_JOB}  
             
-            - CACHE_EXPIRY_TIME: ${ time.format( sys.now()+  18000)}  #5 hours     
+            - CACHE_EXPIRY_TIME: ${ time.format( sys.now()+  7200)}  #2 hours     
             - CACHE_MODEL : ${"projects/"+PROJECT+"/locations/"+LOCATION+"/"+ "publishers/google/models/gemini-1.5-pro-002"}
             - CACHED_CONTENT_ENDPOINT: ${"https://"+ LOCATION +"-aiplatform.googleapis.com/v1beta1/projects/"+ PROJECT+"/locations/"+LOCATION+"/cachedContents"}
 
@@ -49,10 +51,7 @@ main:
             - BATCH_OUTPUT: []
          
             #This will be added to the end of dynamic prompt. As prompt for each segment should be created dynamically.
-            - VIDEO_PROMPT_DETAILS: " Focus on key themes, what people are talking about, names of people who appeared and who are discussed and key locations.\
-                                       Highlight any brands, company names or logos that you see.\
-                                       Give me at least 4000 words describing it. \ 
-                                       Do not add any extra text to the description."
+            - VIDEO_PROMPT_DETAILS: " Focus on key themes, names of people who appeared and who are discussed and key locations. Give me at least 4000 words describing it. \n Do not add any extra text to the description."
 
 
 
@@ -133,8 +132,6 @@ main:
     - set_media_count:
         assign:
             - media_count: ${int(media_count_response.rows[0].f[0]["v"])-1}
-            - media_count_response: null
-            - metadata_load_result: null
 
     - log_media:
         call: sys.log
@@ -187,11 +184,12 @@ main:
                                 in: ${bq_response.schema.fields}
                                 steps:
                                     - set_media_metadata:
-                                            assign:                                            
-                                                - media_map: 
-                                                    "${field.name}" : ${bq_response.rows[0].f[filed_idx]["v"]}
+                                            assign:
+                                                - val: ${bq_response.rows[0].f[filed_idx]["v"]}
+                                                - media_map: {"${field.name}" : "${val}"}
                                                 - metadata_map:  ${map.merge(metadata_map, media_map)} 
 
+                   
                     - log_mediaMetadataInfo:
                             call: sys.log
                             args:
@@ -258,21 +256,7 @@ main:
                     - set_vars_for_video_loop:
                         assign:
                             - prev: 0
-                            - video_duration: ${math.floor(video_duration_result.body.duration)} 
-                            - cache_id: ${llm_cache_response.body.name}
-                            - cached_video_duration: ${math.floor(llm_cache_response.body.usageMetadata.videoDurationSeconds)}
-                            - llm_cache_response : null  
-
-
-                    #Step 6-8: If video duration is exceeding context cache, set it to context cache videoDurationSeconds 
-                    - check_video_duration:
-                                 switch:
-                                    - condition: ${video_duration > cached_video_duration}
-                                      steps:
-                                            - set_video_duration_to_cached_video_duration:  
-                                                assign:
-                                                    - video_duration : ${cached_video_duration}
-
+                            - video_duration: ${math.floor(video_duration_result.body.duration)}                    
 
                     #Step 7: Loop over segments and call multimodal embeddings for each
                     - loop_over_video_segments:
@@ -283,7 +267,6 @@ main:
                                       - startOffset: ${prev}
                                       - endOffset:  ${prev+SEGMENT_LENGTH}
                                       - video_prompt: ${"Describe this video for the time period " + string(startOffset)+ " seconds to "+ string(endOffset) +" seconds."+ VIDEO_PROMPT_DETAILS}
-                                     
             
                             #Step 7-2: If end offset is exceeding video duration, set it to video duration
                             - check_endOffset:
@@ -350,7 +333,7 @@ main:
                                                                     "maxOutputTokens": "${MAX_OUT_TOKENS}",
                                                                 },
 
-                                                                ,"cachedContent": "${cache_id}"
+                                                                ,"cachedContent": "${llm_cache_response.body.name}"
                                                             
                                                                 }                                    
                                                 result: llm_response 
@@ -358,7 +341,7 @@ main:
                                         - log_llm:
                                                 call: sys.log
                                                 args:
-                                                    text: ${"Content Generated "+metadata_map.media_name +"- From "+ string(startOffset) + " to "+ string(endOffset)   }
+                                                    text: ${"Content Generated "+metadata_map.media_name +"- From"+ string(startOffset) + " to "+ string(endOffset)   }
 
                                         # Step 7-3-2: Write the output into GCS
                                         - write_to_gcs:
@@ -370,7 +353,7 @@ main:
                                                     query:
                                                             name: ${VIDEO_CONTENT_FOLDER+"/"+VIDEO_CONTENT_FOLDER_JOB+"/"+metadata_map.media_name+"/"+OUTPUT_FILE_NAME +".json"}                                   
                                                     body:
-                                                            {"intervalSec": "${SEGMENT_LENGTH}",
+                                                            {"intervalSec": "${VIDEO_INTERVALS}",
                                                             "startOffsetSec": "${startOffset}",
                                                             "endOffsetSec": "${endOffset}",
                                                             "duration": "${video_duration}",
@@ -382,9 +365,15 @@ main:
                                         - log_wrtite_to_gcs:
                                                 call: sys.log
                                                 args:
-                                                    text: ${"Data Is Written In to GCS For- " + metadata_map.media_name +"- From "+ string(startOffset) + " to "+ string(endOffset)} 
-                                               
-                                         # Step 7-3-4: Set record to insert write the output into bq as well                                    
+                                                    text: ${"Data Is Written In to GCS For- " + metadata_map.media_name +"- From"+ string(startOffset) + " to "+ string(endOffset)} 
+
+                                        # Step 7-3-3: Init variables to write into bq
+                                        - create_prediction_response:
+                                                assign:  
+                                                    - execution_time: "${time.format(sys.now())}"
+                                                    - predictions:  "${llm_response.body}"
+        
+                                        # Step 7-3-4: Set record to insert write the output into bq as well                                    
                                         - set_row_to_insert:
                                             assign:                                         
                                                 - bigquery_row:
@@ -392,11 +381,11 @@ main:
                                                     mime_type:  ${metadata_map.mime_type}
                                                     name: ${metadata_map.name}
                                                     media_name: ${metadata_map.media_name}
-                                                    predictions: ${json.encode_to_string(llm_response.body)}                                                 
+                                                    predictions: ${json.encode_to_string(predictions)}
+                                                    time: "${time.format(sys.now())}"
                                                     start_offset: ${startOffset}
                                                     end_offset: ${endOffset}
-                                                    time: "${time.format(sys.now())}"
-                                      
+
                                         # Step 7-3-5: Write the output into bq as well
                                         - load_data_into_bq:
                                             call: googleapis.bigquery.v2.tabledata.insertAll
@@ -413,18 +402,22 @@ main:
                                         - log_wrtite_to_bq:
                                                 call: sys.log
                                                 args:
-                                                    text: ${"Data Is Written In to Bigquery Table - " + VIDEO_TABLE +"-"+metadata_map.media_name+"- From "+ string(startOffset) + " to "+ string(endOffset)} 
+                                                    text: ${"Data Is Written In to Bigquery Table - " + VIDEO_TABLE +"-"+metadata_map.media_name+"- From"+ string(startOffset) + " to "+ string(endOffset)} 
 
                                 except:
-                                    as: error
+                                    as: e
                                     steps:
                                         
                                             - logerror:
                                                     call: sys.log
                                                     args:
-                                                        text: ${error}
+                                                        text: ${e}
 
-                                          
+                                            - create_error_response:
+                                                assign: 
+                                                    - execution_time: "${time.format(sys.now())}"
+                                                    - error: ${e}
+
                                             # # Step 7-4: Set record to write the errors into bq as well
                                             - set_error_row_to_insert:
                                                 assign:                                         
@@ -432,11 +425,11 @@ main:
                                                         gcs_uri: ${metadata_map.gcs_uri}
                                                         mime_type:  ${metadata_map.mime_type}
                                                         name: ${metadata_map.name}
-                                                        media_name: ${metadata_map.media_name} 
+                                                        media_name: ${metadata_map.media_name}                                                        
+                                                        time: "${time.format(sys.now())}"
                                                         start_offset: ${startOffset}
                                                         end_offset: ${endOffset}
                                                         error: ${json.encode_to_string(error)}
-                                                        time: "${time.format(sys.now())}"
                                                     
                                             # # Step 7-5: Write the errors into bq as well
                                             - load_errors_into_bq:
@@ -453,13 +446,18 @@ main:
                                             - log_wrtite_error_to_bq:
                                                     call: sys.log
                                                     args:
-                                                        text: ${"Error Is Logged In to Bigquery Table - " + VIDEO_TABLE +"-"+metadata_map.media_name+"- From "+ string(startOffset) + " to "+ string(endOffset)}
+                                                        text: ${"Error Is Logged In to Bigquery Table - " + VIDEO_TABLE +"-"+metadata_map.media_name+"- From"+ string(startOffset) + " to "+ string(endOffset)}
                                    
                             # Step 7-5: Initialize vars to move to next segment
                             - assign_vars_move_next_segment:  
                                     assign:                                
                                       - prev: ${endOffset}
 
+                            # Step 7-6: Check if there is any further segments left, if yes loop again 
+                            - check_endOffset_move_next_segment:
+                                 switch:
+                                    - condition: ${endOffset <video_duration}
+                                      next: loop_over_video_segments
 
                             # Step 7-7: We can not constantly call the enpoint, wait after each call
                             - wait_between_segments:
@@ -467,12 +465,6 @@ main:
                                     args:
                                         seconds: ${SLEEP_BETWEEN_SEGMENTS}
 
-                            # Step 7-6: Check if there is any further segments left, if yes loop again 
-                            - check_endOffset_move_next_segment:
-                                 switch:
-                                    - condition: ${endOffset <video_duration}
-                                      next: loop_over_video_segments
-                                      
                     - log_move_to_next_video:
                             call: sys.log
                             args:
