@@ -10,7 +10,7 @@ main:
 
             - SOURCE_BUCKET:  "raw_nine_files" #${sys.get_env("VAR_SOURCE_BUCKET")} 
             - DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"#${sys.get_env("VAR_DESTINATION_BUCKET")} 
-            - SOURCE_VIDEO_FOLDER: "vlt_video_extract"          
+            - SOURCE_VIDEO_FOLDER: "vlt_video_extract/OTHERS"          
 
             - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+"batchPredictionJobs" }
             - MODEL: "publishers/google/models/gemini-1.5-pro-002"   # "publishers/google/models/gemini-1.5-flash-002"
@@ -42,7 +42,7 @@ main:
             - METADATA_DATASET: "vlt_media_metadata_prelanding"
             - METADATA_TABLE: "vlt_video_batchrequest_metadata"
             - VIDEO_METADATA_TABLE: "vlt_video_metadata" 
-            - NO_OF_CONCURRENT_EXECUSTIONS: 100    
+            - NO_OF_CONCURRENT_EXECUSTIONS: 10    
             - item: {}
             - INERTVALS: 600
 
@@ -96,7 +96,8 @@ main:
                 video_metadata_table: ${PROJECT+"."+METADATA_DATASET+"."+ VIDEO_METADATA_TABLE}
                 intervals: ${INERTVALS}
         result:  request_file_res
-    
+
+      
     #Step 4: Check if any file is created
     - if_requestfile_generated:
             switch:
