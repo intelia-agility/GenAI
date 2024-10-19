@@ -4,6 +4,7 @@ import tempfile, shutil
 import time
 from datetime import datetime
 import json
+from google.cloud import bigquery 
 
 
 def upload_file(request_file : tempfile,dest_bucket_name:str =None,request_file_folder: str =None,request_file_prefix: str =None, version: int=0, request_file_post_fix : str=""):
@@ -31,7 +32,8 @@ def upload_file(request_file : tempfile,dest_bucket_name:str =None,request_file_
 def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: str= None, source_folder_name: str=None,
                           request_file_prefix: str= None, request_file_folder: str= None, mime_types: list[str]= None,
                           prompt_text: str="", temperature: float= None,
-                          max_output_tokens: int=2048, top_p: float= None, top_k : float= None, max_request_per_file: int =None, video_metadata_file: str=""):
+                          max_output_tokens: int=2048, top_p: float= None, top_k : float= None, max_request_per_file: int =None, 
+                          video_metadata_table: str="", intervals: int =120):
 
     """create batch request  file(s) of up to 30000 for video and store it in gcs
    
@@ -48,7 +50,7 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
             float top_k: Gimini top_k
             int max_request_per_file: max number of requests per batch
             int max_output_tokens: Gimini max_output_tokens          
-            str video_metadata_file: name of video metadata
+            str video_metadata_table: name of video metadata table
 
         Returns:
             int : number of generated files
@@ -69,30 +71,30 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
     now=datetime.strptime(str(datetime.now()),
                                '%Y-%m-%d %H:%M:%S.%f')
     now=datetime.strftime(now, '%Y%m%d%H%M%S')
-    versions=[]    
+    versions=[]   
+    # Initialize the BigQuery client
+    bq_client = bigquery.Client()
 
-    # Instantiate a Google Cloud Storage client and specify required bucket and file
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(dest_bucket_name)
-    blob = bucket.blob(video_metadata_file)
-
-    # Download the contents of the blob as a string and then parse it using json.loads() method
-    data = json.loads(blob.download_as_string(client=None))
-    video_metadata=data['items']
-    
-
-    segments_to_process=120 #segments duration
-    intervals=120#intervals
+    segments_to_process=int(intervals) #segments duration  
     video_start =0 #where from video to start
 
     for blob in blobs:                         
         if blob.content_type in mime_types:                            
                          gcsuri= "gs://"+source_bucket_name+"/"+blob.name
                          mimeType=blob.content_type
-                         metadata=list(filter(lambda element: element['gcs_uri'] ==gcsuri, video_metadata))[0]
-                         video_duration=metadata["videoOriginalDurationSecond"]
-                         cache_id=metadata["name"]
-
+#                          metadata=list(filter(lambda element: element['gcs_uri'] ==gcsuri, video_metadata))[0]
+#                          video_duration=metadata["videoOriginalDurationSecond"]
+#                          cache_id=metadata["name"]
+                        
+                         # Define your SQL CREATE MODEL statement
+                         query =f""" SELECT duration FROM `{video_metadata_table}` WHERE gcs_uri='{gcsuri}';"""
+                         # Execute the CREATE MODEL statement
+                         query_job = bq_client.query(query)
+                         # Wait for the job to complete
+                         for video in query_job.result():
+                             video_duration=int(video['duration'])
+                             break
+                         
                          prev=video_start
                          for val in range (segments_to_process,video_duration+segments_to_process,segments_to_process):
                                 offset={'start':prev, 'end':val}
@@ -101,9 +103,9 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
                                 endOffset=offset['end']
                                 if endOffset>=video_duration:
                                      endOffset=video_duration
-                                print(offset)
+                                 
                                 prev=val 
-                                segment_prompt= "Only consider video from" + str(startOffset)+" seconds to "+ str(endOffset)+" seconds. Ignore analyzing the rest of video.\n" 
+                                segment_prompt= "Describe this video from period" + str(startOffset)+" seconds to "+ str(endOffset)+" seconds." 
                                 if index==0:
                                     request_file = tempfile.NamedTemporaryFile(suffix=".json", delete=True) 
                                     rf= open(request_file.name, "a") 
@@ -114,7 +116,7 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
                                               {
                                                 "request": 
                                                      {
-                                                      "cached_content": cache_id,
+                                                      #"cached_content": cache_id,
                                                       "contents":  {
                                                                         "parts": [
                                                                             {
@@ -132,7 +134,7 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
 
                                                                             },
                                                                             {
-                                                                            "text": prompt_text +"\n"+ segment_prompt
+                                                                            "text": segment_prompt +"\n"+ prompt_text 
                                                                             } 
 
                                                                         ],
@@ -310,74 +312,83 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
 
 @functions_framework.http
 def create_batch_request_file(request):
-    """HTTP Cloud Function.
-    Args:
-        request (flask.Request): The request object.
-        <https://flask.palletsprojects.com/en/1.1.x/api/#incoming-request-data>
-    Returns:
-        The response text, or any set of values that can be turned into a
-        Response object using `make_response`
-        <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
-    """
-    request_json = request.get_json(silent=True)
-    request_args = request.args
+        """HTTP Cloud Function.
+        Args:
+            request (flask.Request): The request object.
+            <https://flask.palletsprojects.com/en/1.1.x/api/#incoming-request-data>
+        Returns:
+            The response text, or any set of values that can be turned into a
+            Response object using `make_response`
+            <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
+        """
 
-    dest_bucket_name =request_args['destination_bucket']
-    source_bucket_name =request_args['source_bucket']
-    source_folder_name=request_args['source_folder']
-    request_file_prefix =request_args['request_file_prefix']
-    request_file_folder =request_args['request_file_folder']
-    prompt_text= request_args['prompt_text']
-    media_types= [media.strip() for media in  str(request_args['media_types']).strip().replace("[",''). replace(']','').replace("'",'').split(',')]
+        request_json = request.get_json(silent=True)
+        request_args = request.args
 
- 
-    request_content= request_args['request_content']
+        dest_bucket_name =request_args['destination_bucket']
+        source_bucket_name =request_args['source_bucket']
+        source_folder_name=request_args['source_folder']
+        request_file_prefix =request_args['request_file_prefix']
+        request_file_folder =request_args['request_file_folder']
+        prompt_text= request_args['prompt_text']
+        media_types= [media.strip() for media in  str(request_args['media_types']).strip().replace("[",''). replace(']','').replace("'",'').split(',')]
 
-    if request_args and 'video_metadata_file' in request_args:
-        video_metadata_file= request_args['video_metadata_file']
-    else:
-      video_metadata_file=""
 
-    if request_args and 'temperature' in request_args:
-        temperature= float(request_args['temperature'])
-    else:
-      temperature=1
 
-    if request_args and 'max_output_tokens' in request_args:
-       max_output_tokens= int(request_args['max_output_tokens'] )
-    else:
-         max_output_tokens=8192
 
-    if request_args and 'top_p' in request_args:
-        top_p= float(request_args['top_p'])
-    else:
-         top_p=0.95
+        request_content= request_args['request_content']
 
-    if request_args and 'top_k' in request_args:
-        top_k= float(request_args['top_k'])
-    else:
-         top_k=40
 
-    if request_args and 'max_request_per_file' in request_args:
-        max_request_per_file= int(request_args['max_request_per_file'])
-    else:
-      max_request_per_file=30000
+        if request_args and 'intervals' in request_args:
+            intervals= int(request_args['intervals'])
+        else:
+          intervals=120
 
- 
 
-    versions=0
-    if  request_content=='image':
-      versions=create_image_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
-                                      request_file_prefix=request_file_prefix,request_file_folder=request_file_folder,
-                                      mime_types=media_types, prompt_text=prompt_text,temperature=temperature,
-                                     max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file
-                                      )  
-    if  request_content=='video':
-      versions=create_video_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
-                                      request_file_prefix=request_file_prefix,request_file_folder=request_file_folder,
-                                      mime_types=media_types, prompt_text=prompt_text,temperature=temperature,
-                                     max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file,
-                                     video_metadata_file=video_metadata_file
-                                      ) 
+        if request_args and 'video_metadata_table' in request_args:
+            video_metadata_table= request_args['video_metadata_table']
+        else:
+          video_metadata_table=""
 
-    return {"status":"SUCCESS","file_count":versions}
+        if request_args and 'temperature' in request_args:
+            temperature= float(request_args['temperature'])
+        else:
+          temperature=1
+
+        if request_args and 'max_output_tokens' in request_args:
+           max_output_tokens= int(request_args['max_output_tokens'] )
+        else:
+             max_output_tokens=8192
+
+        if request_args and 'top_p' in request_args:
+            top_p= float(request_args['top_p'])
+        else:
+             top_p=0.95
+
+        if request_args and 'top_k' in request_args:
+            top_k= float(request_args['top_k'])
+        else:
+             top_k=40
+
+        if request_args and 'max_request_per_file' in request_args:
+            max_request_per_file= int(request_args['max_request_per_file'])
+        else:
+          max_request_per_file=30000
+
+
+        versions=0
+        if  request_content=='image':
+          versions=create_image_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
+                                          request_file_prefix=request_file_prefix,request_file_folder=request_file_folder,
+                                          mime_types=media_types, prompt_text=prompt_text,temperature=temperature,
+                                         max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file
+                                          )  
+        if  request_content=='video':
+          versions=create_video_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
+                                          request_file_prefix=request_file_prefix,request_file_folder=request_file_folder,
+                                          mime_types=media_types, prompt_text=prompt_text,temperature=temperature,
+                                         max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file,
+                                         video_metadata_table=video_metadata_table, intervals=intervals
+                                          ) 
+
+        return {"status":"SUCCESS","file_count":versions}

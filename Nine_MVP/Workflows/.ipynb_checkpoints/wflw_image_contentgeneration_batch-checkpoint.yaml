@@ -10,7 +10,7 @@ main:
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
             - SOURCE_BUCKET:  "raw_nine_files" #${sys.get_env("VAR_SOURCE_BUCKET")} 
             - DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"#${sys.get_env("VAR_DESTINATION_BUCKET")} 
-            - SOURCE_IMAGE_FOLDER: "2023"           
+            - SOURCE_IMAGE_FOLDER: "2024"           
 
             - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+"batchPredictionJobs" }
             - MODEL: "publishers/google/models/gemini-1.5-pro-002"   # "publishers/google/models/gemini-1.5-flash-002"
@@ -36,7 +36,7 @@ main:
             - TOP_K: 40    
             - MAX_REQUEST_PER_FILE: 25000 # up to 30000 max
             - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk" #"vlt_multimodal_endpoint"#
-            - METADATA_DATASET: "vlt_media_content_prelanding"
+            - METADATA_DATASET: "vlt_media_metadata_prelanding"
             - METADATA_TABLE: "vlt_image_batchrequest_metadata"
             - item: {}
 

@@ -1,0 +1,297 @@
+# This is the main workflow to generate video contents in batch
+main:
+  steps:
+    # Step 1: initialize varibales
+    - init:
+        assign:
+            - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+            - PROJECT_NUMBER : ${sys.get_env("GOOGLE_CLOUD_PROJECT_NUMBER") }
+
+            - SOURCE_BUCKET:  "raw_nine_files" #${sys.get_env("VAR_SOURCE_BUCKET")} 
+            - DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"#${sys.get_env("VAR_DESTINATION_BUCKET")} 
+            - SOURCE_VIDEO_FOLDER: "vlt_video_extract"          
+
+            - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+"batchPredictionJobs" }
+            - MODEL: "publishers/google/models/gemini-1.5-pro-002"   # "publishers/google/models/gemini-1.5-flash-002"
+            - MEDIA_TYPES: "video/mp4" #comma separated string of mime_types
+
+            - FUNC_CREATE_GCS_BATCH_REQUEST: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_batchrequest_file"}
+            - FUNC_LOAD_MEDIA_METADATA: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_media_metadata"}
+            - FUNC_GET_VIDEO_DURATION_ENDPOINT: ${"https://getvideodurationservice-"+PROJECT_NUMBER+".us-central1.run.app/get-video-duration"}
+                       
+            - REQUEST_FOLDER: "video_batch_request_fldr"
+            - REQUEST_FOLDER_JOB: ${text.replace_all(text.replace_all(text.replace_all(REQUEST_FOLDER+time.format(sys.now()),":",""),".",""),"-","")}
+            - REQUEST_FILE_PREFIX: ${REQUEST_FOLDER_JOB+"/"+"video_request"}
+            - PROCESSED_REQUEST_FOLDER: "processed_video_batch_request_fldr"
+            - ERROR_PROCESSED_REQUEST_FOLDER: "error_video_batch_request_fldr"
+            - BATCH_PREDICTION_FOLDER: "video_batch_prediction_fldr_out"
+            - BATCH_OUTPUT: [] 
+
+            #This will be added to the end of dynamic prompt. As prompt for each segment should be created dynamically.          
+            - VIDEO_PROMPT_TEXT: " Focus on key themes, what people are talking about, names of people who appeared and who are discussed and key locations.\
+                                       Highlight any brands, company names or logos that you see.\
+                                       Give me at least 4000 words describing it. \ 
+                                       Do not add any extra text to the description."
+            - TEMPERATURE: 0.5
+            - MAX_OUT_TOKENS: 8192 # can go up to 8192
+            - TOP_P: 0.8
+            - TOP_K: 40    
+            - MAX_REQUEST_PER_FILE: 25000 # up to 30000 max
+            - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk" #"vlt_multimodal_endpoint"#
+            - METADATA_DATASET: "vlt_media_metadata_prelanding"
+            - METADATA_TABLE: "vlt_video_batchrequest_metadata"
+            - VIDEO_METADATA_TABLE: "vlt_video_metadata" 
+            - NO_OF_CONCURRENT_EXECUSTIONS: 100    
+            - item: {}
+            - INERTVALS: 600
+
+    # Step 1: Create Dataset
+    - create_dataset:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${" CREATE SCHEMA IF NOT EXISTS " +METADATA_DATASET }
+            useLegacySql: false       
+
+
+     #Step 2: Load media metadata- video durations- into  big query table 
+    - load_media_metadata:
+        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+        args:
+            workflow_id: "wflw_set_video_metadata"
+            location: ${LOCATION}
+            project_id: ${PROJECT}
+            argument: {
+                        SOURCE_BUCKET:  "${SOURCE_BUCKET}",
+                        SOURCE_VIDEO_FOLDER: "${SOURCE_VIDEO_FOLDER}",
+                        MEDIA_TYPES: "${MEDIA_TYPES}",
+                         REMOTE_CONN_MODEL_GCS_ID:  "${REMOTE_CONN_MODEL_GCS_ID}",
+                        METADATA_TABLE: "${VIDEO_METADATA_TABLE}",
+                        METADATA_DATASET: "${METADATA_DATASET}"
+                        
+                    }
+
+    # Step 3: If no request file exists, create new request file(s)
+    - genearte_batch_request_file:
+        call: http.post
+        args:
+            url:  ${FUNC_CREATE_GCS_BATCH_REQUEST}
+            query:
+                name: "GENERATE BATCH REQUEST FILE FOR IMAGE"            
+                destination_bucket: ${DESTINATION_BUCKET}
+                source_bucket: ${SOURCE_BUCKET}
+                source_folder: ${SOURCE_VIDEO_FOLDER}
+                request_file_prefix: ${REQUEST_FILE_PREFIX} 
+                request_file_folder:  ${REQUEST_FOLDER}              
+                prompt_text:  ${VIDEO_PROMPT_TEXT}
+                max_output_tokens: ${MAX_OUT_TOKENS}
+                temperature: ${TEMPERATURE}
+                top_p: ${TOP_P}
+                top_k: ${TOP_K}
+                request_content: 'video'
+                media_types: ${MEDIA_TYPES}
+                max_request_per_file: ${MAX_REQUEST_PER_FILE}
+                video_metadata_table: ${PROJECT+"."+METADATA_DATASET+"."+ VIDEO_METADATA_TABLE}
+                intervals: ${INERTVALS}
+        result:  request_file_res
+    
+    #Step 4: Check if any file is created
+    - if_requestfile_generated:
+            switch:
+                - condition: ${ request_file_res.body.file_count>=1}
+                  steps:
+                        - is_generated:   
+                            next: log_batch_request
+                - condition: ${request_file_res.body.file_count==0}
+                  steps:
+                        - not_generated:   
+                            return: "No request file is generated-Check the source image folder"
+
+
+    - log_batch_request:
+        call: sys.log
+        args:
+          text: ${"Batch Request File Is Created - " + "gs://"+DESTINATION_BUCKET+"/"+REQUEST_FOLDER+ "/"+REQUEST_FOLDER_JOB}
+ 
+    
+    # Step 5: Get the list of newly generated request file(s)
+    - get_new_request_files:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${ 
+                  "CREATE OR REPLACE EXTERNAL TABLE `"+METADATA_DATASET+"."+METADATA_TABLE+"`"+
+                  " WITH CONNECTION `"+LOCATION+"."+REMOTE_CONN_MODEL_GCS_ID+"`"+
+                  " OPTIONS ( "+
+                    " object_metadata = 'SIMPLE', "+
+                    " uris = ['gs://"+DESTINATION_BUCKET+"/"+REQUEST_FOLDER+ "/"+REQUEST_FOLDER_JOB+"/*'])" }
+            useLegacySql: false
+
+    
+   
+   # Step 6: Get the request file
+   # each file can only be 30,000 request
+    - fetch_request_file:
+            call:  googleapis.bigquery.v2.jobs.query
+            args:
+                projectId: ${PROJECT}
+                body:
+                    query: ${"SELECT uri as gcs_uri FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` LIMIT 1 OFFSET 0"}                      
+                    useLegacySql: false
+            result: bq_response 
+
+
+    #Step 7: Set the request file detail
+    - get_request_file_details:
+            for: 
+                value: field
+                index: filed_idx
+                in: ${bq_response.schema.fields}
+                steps:
+                        - set_media_metadata:
+                            assign:                               
+                                - media_map: 
+                                    "${field.name}" : ${bq_response.rows[0].f[filed_idx]["v"]}
+                                - item:  ${map.merge(item, media_map)}
+
+    #Step 8: Set varibales
+    - set_vars:
+         assign:
+            - item_length:  ${len(text.split(item.gcs_uri,"/"))}
+            - request_file:  ${text.replace_all(item.gcs_uri,"gs://"+DESTINATION_BUCKET+"/","")}
+           
+ 
+    #Step 98:Get batch prediction job
+    - create_batch_prediction_job:
+            call: http.post
+            args:
+                url: ${CONTENT_LLM_API_ENDPOINT}
+                auth:
+                    type: OAuth2
+                body:
+                                            
+                            displayName: ${"bp_job_image_content_generator_"+text.replace_all(text.split(item.gcs_uri,"/")[item_length-1], ".json","")}
+                            model: ${MODEL}
+                
+                            inputConfig: 
+                                        instancesFormat: "jsonl"
+                                        gcsSource: 
+                                                    uris : ${item.gcs_uri}    
+                            outputConfig:  
+                                        predictionsFormat: "jsonl"
+                                        gcsDestination:
+                                                        outputUriPrefix: ${"gs://"+DESTINATION_BUCKET+"/"+BATCH_PREDICTION_FOLDER}                                                    
+                                                        
+            result: llm_response 
+
+    - log_batch_prediction_job:
+            call: sys.log
+            args:
+                text: ${"Batch Prediction Job Is Created - " +llm_response.body.name}
+
+    # Step 10: Get the job status 
+    - get_job_status: 
+        call: googleapis.aiplatform.v1.projects.locations.batchPredictionJobs.get
+        args:
+            name: ${llm_response.body.name}
+            region: ${LOCATION} 
+        result:  listResult 
+
+                    
+    # Step 11: Check the job status if succeeded or failed return
+    #Move the request file to processed if successfully executed
+    - checkIfDone: 
+            switch:
+                - condition: ${listResult.state=="JOB_STATE_SUCCEEDED"}
+                  steps:
+                        - set_success_out_put:
+                                assign:
+                                    - out_result:
+                                        output_dir: "${listResult.outputInfo.gcsOutputDirectory}"
+                                        state: "JOB_STATE_SUCCEEDED" 
+                                        request_file:  ${item.gcs_uri}       
+                                    - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}                                   
+
+                        - move_request_file_to_processed:
+                                call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+                                args:
+                                    workflow_id: "wflw_cleanup_processed_objects"
+                                    location: ${LOCATION}
+                                    project_id: ${PROJECT}
+                                    argument: {
+                                                source_bucket:  "${DESTINATION_BUCKET}",
+                                                destination_bucket: "${DESTINATION_BUCKET}",
+                                                source_object: "${request_file}",
+                                                destination_object:  '${text.replace_all(request_file,   REQUEST_FOLDER+"/", PROCESSED_REQUEST_FOLDER+"/")}'
+                                                      }                              
+                                next: log_job_execution
+
+                - condition: ${listResult.state=="JOB_STATE_FAILED"}
+                  steps:
+                        - set_fail_out_put:
+                            assign:
+                                - out_result:
+                                    output_dir: ""
+                                    state: "JOB_STATE_FAILED"
+                                    request_file:  ${item.gcs_uri}     
+                                - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}
+
+                        - move_request_file_to_processed_error:
+                            call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+                            args:
+                                workflow_id: "wflw_cleanup_processed_objects"
+                                location: ${LOCATION}
+                                project_id: ${PROJECT}
+                                argument: {
+                                                source_bucket:  "${DESTINATION_BUCKET}",
+                                                destination_bucket: "${DESTINATION_BUCKET}",
+                                                source_object: "${request_file}",
+                                                destination_object:  '${text.replace_all(request_file,  REQUEST_FOLDER+"/", ERROR_PROCESSED_REQUEST_FOLDER+"/")}'
+                                                      }
+                            next: log_job_execution
+
+    #Step 12: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
+    - wait:
+        call: sys.sleep
+        args:
+            seconds: 30
+        next: get_job_status
+
+    - log_job_execution:
+                        call: sys.log
+                        args:
+                           text: ${"Batch Prediction Is Finished - " + "Output Bucket Directory "+ out_result.output_dir+ " ," + "Job Execution Status "+ out_result.state + ", "+ "Processed Request File "+ out_result.request_file }
+                     
+    #Step 13: Fetch next request file
+    - fetch_next_request_file:
+            call:  googleapis.bigquery.v2.jobs.query
+            args:
+                projectId: ${PROJECT}
+                body:
+                    query: ${"SELECT 1 as request_count FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` LIMIT 1"}                      
+                    useLegacySql: false
+            result: bq_response 
+
+    #Step 14: If more file, process them again
+    - check_for_more_requests:
+        switch: 
+            - condition: ${int(bq_response.totalRows)>0}
+              next: fetch_request_file
+              
+    # Step 13: return the result
+    - return_result:
+        return: ${BATCH_OUTPUT}
+
+ 
+
+
+ 
+
+
+ 
+
+
+  
