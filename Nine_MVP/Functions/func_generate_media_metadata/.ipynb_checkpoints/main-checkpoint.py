@@ -61,7 +61,8 @@ def create_table(project_id,dataset_id,table_id):
         bigquery.SchemaField("media_name", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("predictions", "JSON", mode="NULLABLE"),
         bigquery.SchemaField("error", "STRING", mode="NULLABLE"),
-        bigquery.SchemaField("time", "STRING", mode="NULLABLE")
+        bigquery.SchemaField("time", "STRING", mode="NULLABLE"),
+        bigquery.SchemaField("duration", "FLOAT", mode="NULLABLE")
        
     ]     
 
