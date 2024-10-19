@@ -105,7 +105,7 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
                                      endOffset=video_duration
                                  
                                 prev=val 
-                                segment_prompt= "Describe this video from period" + str(startOffset)+" seconds to "+ str(endOffset)+" seconds." 
+                                segment_prompt= "Describe this video from period " + str(startOffset)+" seconds to "+ str(endOffset)+" seconds." 
                                 if index==0:
                                     request_file = tempfile.NamedTemporaryFile(suffix=".json", delete=True) 
                                     rf= open(request_file.name, "a") 
