@@ -11,48 +11,54 @@ main:
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
          
             - MM_MODEL: "multimodalembedding@001" 
-            - MM_BQ_REMOTE_ID: "vlt_multimodal_endpoint" 
+            - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk" #"vlt_multimodal_endpoint"#
             - MODEL_NAME: "vlt_model_media_multimodal_embeddings"
             - MEDIA_TYPES: "image/jpeg,image/png" #comma separated string 
         
-            - METADATA_DATASET: "vlt_media_multimodal_embeddings_prelanding"
+            - METADATA_DATASET: "vlt_media_metadata_prelanding"
             - METADATA_TABLE: "vlt_image_metadata_bq" 
+            - LANDING_DATASET:  "vlt_media_multimodal_embeddings_prelanding"
             - IMAGE_MULTIMODAL_EMBEDDING_TABLE: "vlt_image_multimodal_embeddings_bq" 
             - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
 
             - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}           
-            - SOURCE_IMAGE_FOLDER: "2023/1/a"
+            - SOURCE_IMAGE_FOLDER: "2023/1"
             - BATCH_SIZE: 10000 #shouldnt be more that 25000 limit
 
-    # Step 1: Create Dataset
-    - create_dataset:
+    # Step 1: Create metadata dataset
+    - create_metadata_dataset:
         call:  googleapis.bigquery.v2.jobs.query
         args:
           projectId: ${PROJECT}
           body:
             query: ${" CREATE SCHEMA IF NOT EXISTS " +METADATA_DATASET }
             useLegacySql: false
-        result: model_creation_response
+
+     # Step 2: Create landing dataset
+    - create_landing_dataset:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${" CREATE SCHEMA IF NOT EXISTS " +LANDING_DATASET }
+            useLegacySql: false
 
 
-     # Step 2: Create Model
+     # Step 3: Create Model
     - create_multimodal_model:
         call:  googleapis.bigquery.v2.jobs.query
         args:
           projectId: ${PROJECT}
           body:
-            query: ${" CREATE OR REPLACE MODEL `"+METADATA_DATASET+"."+MODEL_NAME+"` REMOTE WITH CONNECTION `"+LOCATION+"."+MM_BQ_REMOTE_ID+"` OPTIONS(endpoint = '"+MM_MODEL+"');"}
+            query: ${" CREATE OR REPLACE MODEL `"+METADATA_DATASET+"."+MODEL_NAME+"` REMOTE WITH CONNECTION `"+LOCATION+"."+REMOTE_CONN_MODEL_GCS_ID+"` OPTIONS(endpoint = '"+MM_MODEL+"');"}
             useLegacySql: false
-        result: model_creation_response
- 
-
+         
     - log_model_build:
         call: sys.log
         args:
           text: ${"Multimodal Model Created - " }
-
-           
-    # Step 3: Create external table
+          
+    # Step 4: Create external table
     - createExternalTable:
         call: googleapis.bigquery.v2.jobs.insert
         args:
@@ -62,7 +68,7 @@ main:
               query:
                 query: ${ 
                   "CREATE OR REPLACE EXTERNAL TABLE `"+METADATA_DATASET+"."+METADATA_TABLE+"`"+
-                  " WITH CONNECTION `"+LOCATION+"."+MM_BQ_REMOTE_ID+"`"+
+                  " WITH CONNECTION `"+LOCATION+"."+REMOTE_CONN_MODEL_GCS_ID+"`"+
                   " OPTIONS ( "+
                     " object_metadata = 'SIMPLE', "+
                     " uris = ['gs://"+SOURCE_BUCKET+"/"+SOURCE_IMAGE_FOLDER+"/*'])" }
@@ -88,12 +94,12 @@ main:
                                    assign:
                                         - out_result:
                                                 output_table: ""
-                                                state: "BIGQUERY LOAD FAILED- CHECK THE LOGS"                                         
+                                                state: "BIGQUERY EXTERNAL LOAD FAILED- CHECK THE LOGS"                                         
                                        
                             - exit:
                                     return: ${out_result}
 
-                    - condition:  ${load_job_result.status.state in ["PENDING", "RUNNING"] and  not( "errors" in load_job_result.status)}
+                    - condition:  ${load_job_result.status.state in ["PENDING", "RUNNING","STATE_UNSTARTED"] and  not( "errors" in load_job_result.status)}
                       steps:
                             - bg_load_wait:
                                 call: sys.sleep
@@ -140,7 +146,7 @@ main:
         assign:         
           - offset: 0
           - limit: ${BATCH_SIZE}
-          - query: ${"CREATE OR REPLACE TABLE "+ "`"+METADATA_DATASET+"."+IMAGE_MULTIMODAL_EMBEDDING_TABLE+"` AS "}
+          - query: ${"CREATE OR REPLACE TABLE "+ "`"+LANDING_DATASET+"."+IMAGE_MULTIMODAL_EMBEDDING_TABLE+"` AS "}
 
     #Step 10: Fetch the rows in batches and calculate multimodal embeddings
     - fetchRows:
@@ -183,7 +189,7 @@ main:
                                     - exit_embedding:
                                             return: ${failure_message}
 
-                            - condition:  ${load_job_result.status.state in ["PENDING", "RUNNING"] and  not( "errors" in load_job_result.status)}
+                            - condition:  ${load_job_result.status.state in ["PENDING", "RUNNING", "STATE_UNSTARTED"] and  not( "errors" in load_job_result.status)}
                               steps:
                                     - bg_embedding_wait:
                                         call: sys.sleep
@@ -204,7 +210,7 @@ main:
             # Step 10-5: Set the query to Insert into instead of create table
             - update_query:
                 assign:
-                   - query: ${" INSERT INTO "+ "`"+METADATA_DATASET+"."+IMAGE_MULTIMODAL_EMBEDDING_TABLE+"` " }
+                   - query: ${" INSERT INTO "+ "`"+LANDING_DATASET+"."+IMAGE_MULTIMODAL_EMBEDDING_TABLE+"` " }
 
             #Step 10-6: Get media count for next batch
             - get_next_batch:
