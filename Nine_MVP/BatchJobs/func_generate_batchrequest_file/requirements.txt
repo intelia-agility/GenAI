@@ -2,7 +2,5 @@ functions-framework==3.*
 flask
 google-cloud-storage
 gcsfs
-pymediainfo
-mediainfo  
-fastapi==0.68.0
-uvicorn==0.15.0
+google-cloud
+google-cloud-bigquery
