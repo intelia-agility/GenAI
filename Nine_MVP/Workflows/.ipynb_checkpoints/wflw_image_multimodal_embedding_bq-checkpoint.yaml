@@ -22,8 +22,8 @@ main:
             - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
 
             - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}           
-            - SOURCE_IMAGE_FOLDER: "2023/1"
-            - BATCH_SIZE: 1 #shouldnt be more that 25000 limit
+            - SOURCE_IMAGE_FOLDER: "2023"
+            - BATCH_SIZE: 25000 #shouldnt be more that 25000 limit
 
     # Step 1: Create metadata dataset
     - create_metadata_dataset:
@@ -218,7 +218,7 @@ main:
                         - condition: ${media_count>0}
                           next: fetchRows 
     - return_result:
-         return: {"status": "SUCCESS", "output_dataset": "${METADATA_DATASET}", "output_table":"${IMAGE_MULTIMODAL_EMBEDDING_TABLE}"}
+         return: {"status": "SUCCESS", "output_dataset": "${LANDING_DATASET}", "output_table":"${IMAGE_MULTIMODAL_EMBEDDING_TABLE}"}
 
                 
 
