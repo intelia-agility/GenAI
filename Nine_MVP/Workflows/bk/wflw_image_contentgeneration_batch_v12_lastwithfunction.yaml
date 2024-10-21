@@ -10,7 +10,7 @@ main:
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
             - SOURCE_BUCKET:  "raw_nine_files" #${sys.get_env("VAR_SOURCE_BUCKET")} 
             - DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"#${sys.get_env("VAR_DESTINATION_BUCKET")} 
-            - SOURCE_IMAGE_FOLDER: "2023"           
+            - SOURCE_IMAGE_FOLDER: "2024"           
 
             - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+"batchPredictionJobs" }
             - MODEL: "publishers/google/models/gemini-1.5-pro-002"   # "publishers/google/models/gemini-1.5-flash-002"
@@ -26,7 +26,8 @@ main:
             - ERROR_PROCESSED_REQUEST_FOLDER: "error_image_batch_request_fldr"
             - BATCH_PREDICTION_FOLDER: "image_batch_prediction_fldr_out"
             - BATCH_OUTPUT: []           
-            - IMAGE_PROMPT_TEXT: "Describe this image in detail. If there is a text in the image mention that. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\
+            - IMAGE_PROMPT_TEXT: "You are an assistant tasked with describing images for retrieval. \
+                                Describe this image well optimized for retrieval. If there is a text in the image mention that. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\
                                 Give me at least 1500 words describing it. If you are not sure about any info, please do not make it up. Do not add any extra text to the output"
 
             - TEMPERATURE: 0.5
@@ -39,45 +40,41 @@ main:
             - METADATA_TABLE: "vlt_image_batchrequest_metadata"
             - item: {}
 
-    # Step 1: Create new request file(s)
-    # Used container and artifact registery to handle long running scripts as functions have 1 hour limit
-    - genearte_batch_request_file:
-        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run 
-        args:
-            workflow_id: "wflw_generate_batchrequest_file"
-            location: ${LOCATION}
-            project_id: ${PROJECT}
-            argument: {
-                            project: '${PROJECT}',
-                            region:  '${LOCATION}', 
-                            job_description: "generate-batchrequestfile-image" ,           
-                            destination_bucket: '${DESTINATION_BUCKET}',
-                            source_bucket: '${SOURCE_BUCKET}',
-                            source_folder: '${SOURCE_IMAGE_FOLDER}',
-                            request_file_prefix: '${REQUEST_FILE_PREFIX}' ,
-                            request_file_folder:  '${REQUEST_FOLDER}'   ,           
-                            prompt_text:  '${IMAGE_PROMPT_TEXT}',
-                            max_output_tokens: '${string(MAX_OUT_TOKENS)}',
-                            temperature: '${string(TEMPERATURE)}',
-                            top_p: '${string(TOP_P)}',
-                            top_k: '${string(TOP_K)}',
-                            request_content: 'image',
-                            media_types: '${MEDIA_TYPES}',
-                            max_request_per_file: '${string(MAX_REQUEST_PER_FILE)}'
-                           }  
-        result: result
     
-    #Step 2: Check if any file is created
+    # Step 2: If no request file exists, create new request file(s)
+    - genearte_batch_request_file:
+        call: http.post
+        args:
+            url:  ${FUNC_CREATE_GCS_BATCH_REQUEST}
+            query:
+                name: "GENERATE BATCH REQUEST FILE FOR IMAGE"            
+                destination_bucket: ${DESTINATION_BUCKET}
+                source_bucket: ${SOURCE_BUCKET}
+                source_folder: ${SOURCE_IMAGE_FOLDER}
+                request_file_prefix: ${REQUEST_FILE_PREFIX} 
+                request_file_folder:  ${REQUEST_FOLDER}              
+                prompt_text:  ${IMAGE_PROMPT_TEXT}
+                max_output_tokens: ${MAX_OUT_TOKENS}
+                temperature: ${TEMPERATURE}
+                top_p: ${TOP_P}
+                top_k: ${TOP_K}
+                request_content: 'image'
+                media_types: ${MEDIA_TYPES}
+                max_request_per_file: ${MAX_REQUEST_PER_FILE}
+        result:  request_file_res
+
+    
+    #Step 3: Check if any file is created
     - if_requestfile_generated:
             switch:
-                - condition: ${ result.state=="SUCCEEDED"}
+                - condition: ${ request_file_res.body.file_count>=1}
                   steps:
                         - is_generated:   
                             next: log_batch_request
-                - condition: ${result.state !="SUCCEEDED"}
+                - condition: ${request_file_res.body.file_count==0}
                   steps:
                         - not_generated:   
-                            return: ${"No request file is generated- Check the source image folder or batch job logs "+ result.name}
+                            return: "No request file is generated-Check the source image folder"
 
 
     - log_batch_request:
@@ -86,7 +83,7 @@ main:
           text: ${"Batch Request File Is Created - " + "gs://"+DESTINATION_BUCKET+"/"+REQUEST_FOLDER+ "/"+REQUEST_FOLDER_JOB}
 
 
-     # Step 3: Create Dataset
+     # Step 1: Create Dataset
     - create_dataset:
         call:  googleapis.bigquery.v2.jobs.query
         args:
@@ -108,7 +105,9 @@ main:
                   " OPTIONS ( "+
                     " object_metadata = 'SIMPLE', "+
                     " uris = ['gs://"+DESTINATION_BUCKET+"/"+REQUEST_FOLDER+ "/"+REQUEST_FOLDER_JOB+"/*'])" }
-            useLegacySql: false    
+            useLegacySql: false
+
+    
    
    # Step 5: Get the request file
    # each file can only be 30,000 request
@@ -231,11 +230,11 @@ main:
                                                       }
                             next: log_job_execution
 
-    #Step 11: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
+    #Step 10: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
     - wait:
         call: sys.sleep
         args:
-            seconds: 3
+            seconds: 30
         next: get_job_status
 
     - log_job_execution:
@@ -243,7 +242,7 @@ main:
                         args:
                            text: ${"Batch Prediction Is Finished - " + "Output Bucket Directory "+ out_result.output_dir+ " ," + "Job Execution Status "+ out_result.state + ", "+ "Processed Request File "+ out_result.request_file }
                      
-    #Step 12: Fetch next request file
+    #Step 11: Fetch next request file
     - fetch_next_request_file:
             call:  googleapis.bigquery.v2.jobs.query
             args:
@@ -253,13 +252,13 @@ main:
                     useLegacySql: false
             result: bq_response 
 
-    #Step 13: If more file, process them again
+    #Step 12: If more file, process them again
     - check_for_more_requests:
         switch: 
             - condition: ${int(bq_response.totalRows)>0}
               next: fetch_request_file
               
-    # Step 14: return the result
+    # Step 13: return the result
     - return_result:
         return: ${BATCH_OUTPUT}
 

@@ -1,0 +1,110 @@
+main:
+  params: [input]
+  steps:
+    - set_input_variables:
+        steps:
+            - assign_common_vars:
+                assign: 
+                    - input_vars:
+                                destination_bucket: ${input.destination_bucket}
+                                source_bucket: ${input.source_bucket}
+                                source_folder: ${input.source_folder}
+                                request_file_prefix: ${input.request_file_prefix} 
+                                request_file_folder:  ${input.request_file_folder}              
+                                prompt_text:  ${input.prompt_text}
+                                max_output_tokens: ${input.max_output_tokens}
+                                temperature: ${input.temperature}
+                                top_p: ${input.top_p}
+                                top_k: ${input.top_k}
+                                request_content: ${input.request_content}       
+                                media_types: ${input.media_types}
+                                max_request_per_file: ${input.max_request_per_file} 
+                    - projectId:  ${input.project}
+                    - region:  ${input.region}
+                    - imageUri: ${region + "-docker.pkg.dev/" + projectId + "/vlt-generate-batchrequest-docker/generate-batchrequest-file:v1.00"}
+                    - jobId: ${input.job_description+"-"+ string(int(sys.now()))}
+  
+            - assing_video_only_vars:
+                    switch:
+                        - condition: '${"intervals" in input}'
+                          assign:
+                                - tmp:  {"intervals": "${input.intervals}"}
+                                - input_vars: ${map.merge(input_vars, tmp)} 
+                                - tmp: null
+                        - condition: '${"video_metadata_table" in input}'
+                          assign:
+                                - tmp:  {"video_metadata_table": "${input.video_metadata_table}"}
+                                - input_vars: ${map.merge(input_vars, tmp)}
+                                - tmp: null 
+
+    - logCreateBatchJob:
+        call: sys.log
+        args:
+          data: ${"Creating and running the batch job " + jobId}
+    - createAndRunBatchJob:
+        call: googleapis.batch.v1.projects.locations.jobs.create
+        args:
+            parent: ${"projects/" + projectId + "/locations/" + region}
+            jobId: ${jobId}
+            body:
+              taskGroups:
+                taskSpec:
+                  runnables:
+                    - container:
+                        imageUri: ${imageUri}
+                      environment:
+                        variables:
+                               ${input_vars }
+                  computeResource: {
+                        "cpuMilli": 8000, # 8cpu
+                        "memoryMib": 32768  #32 GB of memory 
+                        }
+                 
+
+                # Run 1 tasks on 1 VMs
+                taskCount: 1
+                parallelism: 3
+   
+                 
+              allocationPolicy: {
+                            "instances": [
+                            {
+                                "policy": {
+                                "machineType": "e2-standard-8",
+                                "provisioningModel": "SPOT"
+                                }
+                            }
+                            ]
+                        }
+              logsPolicy:               
+                destination: CLOUD_LOGGING
+        result: createAndRunBatchJobResponse
+
+    - get_job_status: 
+        call: googleapis.batch.v1.projects.locations.jobs.get
+        args:
+            name: ${createAndRunBatchJobResponse.name}
+        result:  listResult
+ 
+    # Step 10: Check the job status if succeeded or failed return
+    #Move the request file to processed if successfully executed
+    - checkIfDone: 
+            switch:
+                - condition: ${listResult.status.state in ["CANCELLED","FAILED","SUCCEEDED"]}
+                  next: returnResult
+                - condition: ${listResult.status.state in ["SCHEDULED","RUNNING","PENDING","ASSIGNED"]}
+                  next: get_job_status
+    
+    #Step 10: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
+    - wait:
+        call: sys.sleep
+        args:
+            seconds: 5
+        next: get_job_status
+
+    - returnResult:
+        return: {"state": "${listResult.status.state}", "name": "${listResult.name}" }
+      
+     
+
+ 

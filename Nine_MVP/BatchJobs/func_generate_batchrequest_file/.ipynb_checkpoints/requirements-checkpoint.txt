@@ -4,3 +4,8 @@ google-cloud-storage
 gcsfs
 google-cloud
 google-cloud-bigquery
+pymediainfo
+mediainfo 
+pydantic
+
+ 

@@ -41,75 +41,105 @@ main:
             - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk" #"vlt_multimodal_endpoint"#
             - METADATA_DATASET: "vlt_media_metadata_prelanding"
             - METADATA_TABLE: "vlt_video_batchrequest_metadata"
-            - VIDEO_METADATA_TABLE: "vlt_video_metadata" 
+            #- VIDEO_METADATA_TABLE: "vlt_video_metadata" 
             - NO_OF_CONCURRENT_EXECUSTIONS: 10    
             - item: {}
             - INERTVALS: 600
 
-    # Step 1: Create Dataset
-    - create_dataset:
-        call:  googleapis.bigquery.v2.jobs.query
-        args:
-          projectId: ${PROJECT}
-          body:
-            query: ${" CREATE SCHEMA IF NOT EXISTS " +METADATA_DATASET }
-            useLegacySql: false       
+    # # Step 1: Create Dataset
+    # - create_dataset:
+    #     call:  googleapis.bigquery.v2.jobs.query
+    #     args:
+    #       projectId: ${PROJECT}
+    #       body:
+    #         query: ${" CREATE SCHEMA IF NOT EXISTS " +METADATA_DATASET }
+    #         useLegacySql: false       
 
 
-     #Step 2: Load media metadata- video durations- into  big query table 
-    - load_media_metadata:
-        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+    #  #Step 2: Load media metadata- video durations- into  big query table 
+    # - load_media_metadata:
+    #     call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+    #     args:
+    #         workflow_id: "wflw_set_video_metadata"
+    #         location: ${LOCATION}
+    #         project_id: ${PROJECT}
+    #         argument: {
+    #                     SOURCE_BUCKET:  "${SOURCE_BUCKET}",
+    #                     SOURCE_VIDEO_FOLDER: "${SOURCE_VIDEO_FOLDER}",
+    #                     MEDIA_TYPES: "${MEDIA_TYPES}",
+    #                      REMOTE_CONN_MODEL_GCS_ID:  "${REMOTE_CONN_MODEL_GCS_ID}",
+    #                     METADATA_TABLE: "${VIDEO_METADATA_TABLE}",
+    #                     METADATA_DATASET: "${METADATA_DATASET}"
+                        
+    #                 }
+
+    # # Step 3: If no request file exists, create new request file(s)
+    # - genearte_batch_request_file:
+    #     call: http.post
+    #     args:
+    #         url:  ${FUNC_CREATE_GCS_BATCH_REQUEST}
+    #         query:
+    #             name: "GENERATE BATCH REQUEST FILE FOR IMAGE"            
+    #             destination_bucket: ${DESTINATION_BUCKET}
+    #             source_bucket: ${SOURCE_BUCKET}
+    #             source_folder: ${SOURCE_VIDEO_FOLDER}
+    #             request_file_prefix: ${REQUEST_FILE_PREFIX} 
+    #             request_file_folder:  ${REQUEST_FOLDER}              
+    #             prompt_text:  ${VIDEO_PROMPT_TEXT}
+    #             max_output_tokens: ${MAX_OUT_TOKENS}
+    #             temperature: ${TEMPERATURE}
+    #             top_p: ${TOP_P}
+    #             top_k: ${TOP_K}
+    #             request_content: 'video'
+    #             media_types: ${MEDIA_TYPES}
+    #             max_request_per_file: ${MAX_REQUEST_PER_FILE}
+    #             video_metadata_table: ${PROJECT+"."+METADATA_DATASET+"."+ VIDEO_METADATA_TABLE}
+    #             intervals: ${INERTVALS}
+    #     result:  request_file_res
+
+    
+    # Step 1: Create new request file(s)
+    # Used container and artifact registery to handle long running scripts as functions have 1 hour limit
+    - genearte_batch_request_file:
+        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run 
         args:
-            workflow_id: "wflw_set_video_metadata"
+            workflow_id: "wflw_generate_batchrequest_file"
             location: ${LOCATION}
             project_id: ${PROJECT}
             argument: {
-                        SOURCE_BUCKET:  "${SOURCE_BUCKET}",
-                        SOURCE_VIDEO_FOLDER: "${SOURCE_VIDEO_FOLDER}",
-                        MEDIA_TYPES: "${MEDIA_TYPES}",
-                         REMOTE_CONN_MODEL_GCS_ID:  "${REMOTE_CONN_MODEL_GCS_ID}",
-                        METADATA_TABLE: "${VIDEO_METADATA_TABLE}",
-                        METADATA_DATASET: "${METADATA_DATASET}"
-                        
-                    }
+                            project: '${PROJECT}',
+                            region:  '${LOCATION}', 
+                            job_description: "generate-batchrequestfile-video" ,           
+                            destination_bucket: '${DESTINATION_BUCKET}',
+                            source_bucket: '${SOURCE_BUCKET}',
+                            source_folder: '${SOURCE_VIDEO_FOLDER}',
+                            request_file_prefix: '${REQUEST_FILE_PREFIX}' ,
+                            request_file_folder:  '${REQUEST_FOLDER}'   ,           
+                            prompt_text:  '${VIDEO_PROMPT_TEXT}',
+                            max_output_tokens: '${string(MAX_OUT_TOKENS)}',
+                            temperature: '${string(TEMPERATURE)}',
+                            top_p: '${string(TOP_P)}',
+                            top_k: '${string(TOP_K)}',
+                            request_content: 'video',
+                            media_types: '${MEDIA_TYPES}',
+                            max_request_per_file: '${string(MAX_REQUEST_PER_FILE)}',
+                            #video_metadata_table: '${PROJECT+"."+METADATA_DATASET+"."+ VIDEO_METADATA_TABLE}',
+                            intervals: '${string(INERTVALS)}'
+                           }  
+        result: result
+ 
 
-    # Step 3: If no request file exists, create new request file(s)
-    - genearte_batch_request_file:
-        call: http.post
-        args:
-            url:  ${FUNC_CREATE_GCS_BATCH_REQUEST}
-            query:
-                name: "GENERATE BATCH REQUEST FILE FOR IMAGE"            
-                destination_bucket: ${DESTINATION_BUCKET}
-                source_bucket: ${SOURCE_BUCKET}
-                source_folder: ${SOURCE_VIDEO_FOLDER}
-                request_file_prefix: ${REQUEST_FILE_PREFIX} 
-                request_file_folder:  ${REQUEST_FOLDER}              
-                prompt_text:  ${VIDEO_PROMPT_TEXT}
-                max_output_tokens: ${MAX_OUT_TOKENS}
-                temperature: ${TEMPERATURE}
-                top_p: ${TOP_P}
-                top_k: ${TOP_K}
-                request_content: 'video'
-                media_types: ${MEDIA_TYPES}
-                max_request_per_file: ${MAX_REQUEST_PER_FILE}
-                video_metadata_table: ${PROJECT+"."+METADATA_DATASET+"."+ VIDEO_METADATA_TABLE}
-                intervals: ${INERTVALS}
-        result:  request_file_res
-
-      
-    #Step 4: Check if any file is created
+    #Step 2: Check if any file is created
     - if_requestfile_generated:
             switch:
-                - condition: ${ request_file_res.body.file_count>=1}
+                - condition: ${ result.state=="SUCCEEDED"}
                   steps:
                         - is_generated:   
                             next: log_batch_request
-                - condition: ${request_file_res.body.file_count==0}
+                - condition: ${result.state !="SUCCEEDED"}
                   steps:
                         - not_generated:   
-                            return: "No request file is generated-Check the source image folder"
-
+                            return: ${"No request file is generated- Check the source image folder or batch job logs "+ result.name}
 
     - log_batch_request:
         call: sys.log
@@ -174,7 +204,7 @@ main:
                     type: OAuth2
                 body:
                                             
-                            displayName: ${"bp_job_image_content_generator_"+text.replace_all(text.split(item.gcs_uri,"/")[item_length-1], ".json","")}
+                            displayName: ${"bp_job_video_content_generator_"+text.replace_all(text.split(item.gcs_uri,"/")[item_length-1], ".json","")}
                             model: ${MODEL}
                 
                             inputConfig: 

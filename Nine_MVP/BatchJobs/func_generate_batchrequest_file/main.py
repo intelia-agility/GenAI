@@ -5,7 +5,10 @@ import time
 from datetime import datetime
 import json
 from google.cloud import bigquery 
-
+import os 
+import gcsfs
+from pymediainfo import MediaInfo
+from pydantic import BaseModel
 
 def upload_file(request_file : tempfile,dest_bucket_name:str =None,request_file_folder: str =None,request_file_prefix: str =None, version: int=0, request_file_post_fix : str=""):
 
@@ -32,10 +35,10 @@ def upload_file(request_file : tempfile,dest_bucket_name:str =None,request_file_
     
 
 def get_video_duration(gcsuri: str):
-    """"
-    get video duration of a given gcs url
+    """
+        get video duration of a given gcs url
     
-    """"
+    """
     
     fs = gcsfs.GCSFileSystem()
     # Open the file stream using gcsfs
@@ -44,8 +47,7 @@ def get_video_duration(gcsuri: str):
               media_info = MediaInfo.parse(video_file)
               for track in media_info.tracks:
                   if track.track_type == 'Video':
-                      duration= track.duration / 1000  # Convert ms to seconds
-                      print(duration)
+                      duration= track.duration / 1000  # Convert ms to seconds                     
                       break
  
 
@@ -103,10 +105,8 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
     for blob in blobs:                         
         if blob.content_type in mime_types:                            
                          gcsuri= "gs://"+source_bucket_name+"/"+blob.name
-                         mimeType=blob.content_type
- 
-                        video_duration=get_video_duration(gcsuri)
-                                                
+                         mimeType=blob.content_type 
+                         video_duration=int(get_video_duration(gcsuri))                                                
                          prev=video_start
                          for val in range (segments_to_process,video_duration+segments_to_process,segments_to_process):
                                 offset={'start':prev, 'end':val}
@@ -321,158 +321,104 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
         versions.append(version)   
  
     return len(versions)
+    
+    
+if __name__ == "__main__":   
 
-@functions_framework.http
-def create_batch_request_file(request):
-        """HTTP Cloud Function.
-        Args:
-            request (flask.Request): The request object.
-            <https://flask.palletsprojects.com/en/1.1.x/api/#incoming-request-data>
-        Returns:
-            The response text, or any set of values that can be turned into a
-            Response object using `make_response`
-            <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
-        """
+        request_content= os.environ.get('request_content')
+        
+        if  'destination_bucket' in os.environ:
+            dest_bucket_name= os.environ.get('destination_bucket')
+        else:
+          destination_bucket=""
+        
+        if  'source_bucket' in os.environ:
+            source_bucket_name= os.environ.get('source_bucket')
+        else:
+          source_bucket_name=""
+        
+        if  'source_folder' in os.environ:
+            source_folder_name= os.environ.get('source_folder')
+        else:
+          source_folder_name=""
+        
+                
+        if  'request_file_prefix' in os.environ:
+            request_file_prefix= os.environ.get('request_file_prefix')
+        else:
+          request_file_prefix=""
+        
+        if  'request_file_folder' in os.environ:
+            request_file_folder= os.environ.get('request_file_folder')
+        else:
+          request_file_folder=""
+        
+        if  'prompt_text' in os.environ:
+            prompt_text= os.environ.get('prompt_text')
+        else:
+          prompt_text=""
+        
+        if  'media_types' in os.environ:             
+             media_types= [media.strip() for media in  str(os.environ.get('media_types')).strip().replace("[",''). replace(']','').replace("'",'').split(',')]
 
-        request_json = request.get_json(silent=True)
-        request_args = request.args
+        else:
+          media_types=[]
+        
 
-        dest_bucket_name =request_args['destination_bucket']
-        source_bucket_name =request_args['source_bucket']
-        source_folder_name=request_args['source_folder']
-        request_file_prefix =request_args['request_file_prefix']
-        request_file_folder =request_args['request_file_folder']
-        prompt_text= request_args['prompt_text']
-        media_types= [media.strip() for media in  str(request_args['media_types']).strip().replace("[",''). replace(']','').replace("'",'').split(',')]
-
-
-
-
-        request_content= request_args['request_content']
-
-
-        if request_args and 'intervals' in request_args:
-            intervals= int(request_args['intervals'])
+        if  'intervals' in os.environ:
+            intervals= int(os.environ.get('intervals'))
         else:
           intervals=120
 
 
-        if request_args and 'video_metadata_table' in request_args:
-            video_metadata_table= request_args['video_metadata_table']
+        if  'video_metadata_table' in os.environ:
+            video_metadata_table= os.environ.get('video_metadata_table')
         else:
           video_metadata_table=""
 
-        if request_args and 'temperature' in request_args:
-            temperature= float(request_args['temperature'])
+        if   'temperature' in os.environ:
+            temperature= float(os.environ.get('temperature'))
         else:
           temperature=1
 
-        if request_args and 'max_output_tokens' in request_args:
-           max_output_tokens= int(request_args['max_output_tokens'] )
+        if   'max_output_tokens' in os.environ:
+           max_output_tokens= int(os.environ.get('max_output_tokens') )
         else:
              max_output_tokens=8192
 
-        if request_args and 'top_p' in request_args:
-            top_p= float(request_args['top_p'])
+        if  'top_p' in os.environ:
+            top_p= float(os.environ.get('top_p'))
         else:
              top_p=0.95
 
-        if request_args and 'top_k' in request_args:
-            top_k= float(request_args['top_k'])
+        if  'top_k' in os.environ:
+            top_k= float(os.environ.get('top_k'))
         else:
              top_k=40
 
-        if request_args and 'max_request_per_file' in request_args:
-            max_request_per_file= int(request_args['max_request_per_file'])
+        if   'max_request_per_file' in os.environ:
+            max_request_per_file= int(os.environ.get('max_request_per_file'))
         else:
           max_request_per_file=30000
-
 
         versions=0
         if  request_content=='image':
-          versions=create_image_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
+             versions=create_image_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
                                           request_file_prefix=request_file_prefix,request_file_folder=request_file_folder,
                                           mime_types=media_types, prompt_text=prompt_text,temperature=temperature,
-                                         max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file
+                                          max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file
                                           )  
         if  request_content=='video':
-          versions=create_video_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
+             versions=create_video_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
                                           request_file_prefix=request_file_prefix,request_file_folder=request_file_folder,
                                           mime_types=media_types, prompt_text=prompt_text,temperature=temperature,
-                                         max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file,
-                                         video_metadata_table=video_metadata_table, intervals=intervals
+                                          max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file,
+                                          video_metadata_table=video_metadata_table, intervals=intervals
                                           ) 
-
-        return {"status":"SUCCESS","file_count":versions}
-    
-    
-if __name__ == "__main__":
-    project_id= os.environ.get("PROJECT_ID") 
-    dataset= os.environ.get("DATASET")  
-    table= os.environ.get("TABLE") 
-    region= os.environ.get("REGION") 
-    metadata_columns= str(os.environ.get("META_DATA_COLUMNS")).split(',') 
-    page_content_columns= str(os.environ.get("PAGE_CONTENT_COLUMNS")).split(',') 
-    source_query_str= os.environ.get("SOURCE_QUERY_STR") 
-    separators= None if str(os.environ.get("SEPARATORS"))=="" else str(os.environ.get("SEPARATORS")).split(',') 
-    chunk_size= 1000 if str(os.environ.get("CHUNK_SIZE"))=="None" else int(str(os.environ.get("CHUNK_SIZE")))  
-    chunk_overlap= 0 if str(os.environ.get("CHUNK_OVERLAP"))=="None" else int(str(os.environ.get("CHUNK_OVERLAP")))
-    
-    create_batch_request_file(request):
         
-    request_json = request.get_json(silent=True)
-        request_args = request.args
-
-        dest_bucket_name =os.environ.get['destination_bucket']
-        source_bucket_name =os.environ.get['source_bucket']
-        source_folder_name=os.environ.get['source_folder']
-        request_file_prefix =os.environ.get['request_file_prefix']
-        request_file_folder =os.environ.get['request_file_folder']
-        prompt_text= os.environ.get['prompt_text']
-        media_types= [media.strip() for media in  str(os.environ.get['media_types']).strip().replace("[",''). replace(']','').replace("'",'').split(',')]
-
-
-
-
-        request_content= os.environ.get['request_content']
-
-
-        if  'intervals' in os.environ:
-            intervals= int(os.environ.get['intervals'])
-        else:
-          intervals=120
-
-
-        if request_args and 'video_metadata_table' in request_args:
-            video_metadata_table= os.environ.get['video_metadata_table']
-        else:
-          video_metadata_table=""
-
-        if request_args and 'temperature' in request_args:
-            temperature= float(os.environ.get['temperature'])
-        else:
-          temperature=1
-
-        if request_args and 'max_output_tokens' in request_args:
-           max_output_tokens= int(os.environ.get['max_output_tokens'] )
-        else:
-             max_output_tokens=8192
-
-        if request_args and 'top_p' in request_args:
-            top_p= float(os.environ.get['top_p'])
-        else:
-             top_p=0.95
-
-        if request_args and 'top_k' in request_args:
-            top_k= float(os.environ.get['top_k'])
-        else:
-             top_k=40
-
-        if request_args and 'max_request_per_file' in request_args:
-            max_request_per_file= int(os.environ.get['max_request_per_file'])
-        else:
-          max_request_per_file=30000
-
+        # if  request_content=='video_duration':
+            
+          
 
         
  
