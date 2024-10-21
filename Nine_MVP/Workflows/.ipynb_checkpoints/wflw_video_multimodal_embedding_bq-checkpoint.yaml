@@ -22,7 +22,7 @@ main:
             - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
             - VIDEO_METADATA_TABLE: "vlt_video_metadata" 
 
-            - SOURCE_BUCKET: "raw_nine_files"# ${sys.get_env("VAR_SOURCE_BUCKET")}           
+            - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")}           
             - SOURCE_VIDEO_FOLDER: "vlt_video_extract/NINE_NIEWS"
             - BATCH_SIZE: 1 #shouldnt be more that 25000 limit
             - SEGMENT_LENGTH: 120
