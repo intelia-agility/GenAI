@@ -242,7 +242,7 @@ main:
                     - log_batch_execution:
                         call: sys.log
                         args:
-                            text: ${"Batch Finished - " +string(limit) + " Loaded From "+string(offset) +" For Segment "+  string(startSegment) +" to "+ string(endSegment) +" secs." }
+                            text: ${"Batch Finished - " +string(limit) + " Loaded From "+string(offset) +" " }
 
                     # Step 11-4: Set the variables for fetching next batch
                     - updateOffset:

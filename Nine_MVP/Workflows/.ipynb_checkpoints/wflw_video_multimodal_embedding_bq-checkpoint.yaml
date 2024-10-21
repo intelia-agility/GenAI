@@ -23,10 +23,11 @@ main:
             - VIDEO_METADATA_TABLE: "vlt_video_metadata" 
 
             - SOURCE_BUCKET: "raw_nine_files"# ${sys.get_env("VAR_SOURCE_BUCKET")}           
-            - SOURCE_VIDEO_FOLDER: "vlt_video_extract/OTHERS"
+            - SOURCE_VIDEO_FOLDER: "vlt_video_extract/NINE_NIEWS"
             - BATCH_SIZE: 1 #shouldnt be more that 25000 limit
             - SEGMENT_LENGTH: 120
             - INTERVALS : 120 
+
 
     # Step 1: Create metadata dataset
     - create_metadata_dataset:
@@ -184,11 +185,6 @@ main:
                 - condition: ${int(response.rows[0].f[0]["v"])==0}
                   next: return_result 
 
-    - log_segment_execution:
-                        call: sys.log
-                        args:
-                            text: ${"Starting Batch Execution For Segment - " +string(startSegment) + " Loaded From "+string(endSegment) +" " }
-                            
     #Step 15: Fetch the rows in batches and calculate multimodal embeddings
     - fetchRows:
                 steps:
@@ -246,7 +242,7 @@ main:
                     - log_batch_execution:
                         call: sys.log
                         args:
-                            text: ${"Batch Finished - " +string(limit) + " Loaded From "+string(offset) +" " }
+                            text: ${"Batch Finished - " +string(limit) + " Loaded From "+string(offset) +" For Segment "+  string(startSegment) +" to "+ string(endSegment) +" secs." }
 
                     # Step 11-4: Set the variables for fetching next batch
                     - updateOffset:
@@ -280,8 +276,6 @@ main:
                                 - condition: ${int(response.rows[0].f[0]["v"])>0}
                                   next: fetchRows 
 
-                                  
-
     # Step 12: Set the variables for fetching next batch
     - updateSegment:
             assign:
@@ -289,7 +283,7 @@ main:
             next: init_vars
 
     - return_result:
-         return: {"status": "SUCCESS", "output_dataset": "${METADATA_DATASET}", "output_table":"${VIDEO_MULTIMODAL_EMBEDDING_TABLE}"}
+         return: {"status": "SUCCESS", "output_dataset": "${LANDING_DATASET}", "output_table":"${VIDEO_MULTIMODAL_EMBEDDING_TABLE}"}
 
                 
 
