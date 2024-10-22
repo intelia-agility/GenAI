@@ -1,5 +1,3 @@
-import functions_framework
-
 import google.cloud.bigquery as bq
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_community import BigQueryLoader
@@ -148,7 +146,8 @@ def chunk_bq_content(request_args):
     chunk_idx=0
     prev=doc_splits[0].metadata["asset_id"]
     rows_to_insert=[]
-    #request_date=datetime.today().strftime('%Y_%m_%d')    
+    #request_date=datetime.today().strftime('%Y_%m_%d') 
+    now = datetime.now()
         
     client = bigquery.Client(project_id)    
     #create data set if does not exist

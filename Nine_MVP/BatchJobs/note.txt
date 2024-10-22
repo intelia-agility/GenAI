@@ -9,4 +9,20 @@
   step 2:
   
   gcloud builds submit --config cloudbuild.yaml .
+  
+  
+  
+ ------------------------
+ 
+  step 1:
+  
+  gcloud artifacts repositories create vlt-chunk-bq-content-docker \
+    --repository-format=docker \
+    --location=us-central1
+	
+	
+	
+  step 2:
+  
+  gcloud builds submit --config cloudbuild.yaml .
    
