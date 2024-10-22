@@ -1,4 +1,4 @@
-### This is the workflow to extract multimodal embeddings from images using biqquery ML
+### This is the workflow to extract multimodal embeddings from videos using biqquery ML
 
 main:
   #params: [input]
