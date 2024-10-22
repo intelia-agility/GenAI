@@ -56,8 +56,8 @@ main:
                         variables:
                                ${input_vars }
                   computeResource: {
-                        "cpuMilli": 8000, # 8cpu
-                        "memoryMib": 32768  #32 GB of memory 
+                        "cpuMilli": 1000, # 8cpu
+                        "memoryMib": 512  #32 GB of memory 
                         }
                  
 
@@ -70,7 +70,7 @@ main:
                             "instances": [
                             {
                                 "policy": {
-                                "machineType": "e2-standard-8",
+                                "machineType": "e2-standard-4",
                                 "provisioningModel": "SPOT"
                                 }
                             }
@@ -93,14 +93,12 @@ main:
                 - condition: ${listResult.status.state in ["CANCELLED","FAILED","SUCCEEDED"]}
                   next: returnResult
                 - condition: ${listResult.status.state in ["SCHEDULED","RUNNING","PENDING","ASSIGNED"]}
-                  next: get_job_status
-    
-    #Step 10: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
-    - wait:
-        call: sys.sleep
-        args:
-            seconds: 5
-        next: get_job_status
+                  steps:    
+                      - wait:
+                          call: sys.sleep
+                          args:
+                              seconds: 5
+                          next: get_job_status
 
     - returnResult:
         return: {"state": "${listResult.status.state}", "name": "${listResult.name}" }

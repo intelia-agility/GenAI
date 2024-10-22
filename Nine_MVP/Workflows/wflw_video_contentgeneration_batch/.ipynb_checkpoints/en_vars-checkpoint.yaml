@@ -1,0 +1,14 @@
+VAR_SOURCE_BUCKET: "raw_nine_files"
+VAR_DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"
+VAR_SOURCE_VIDEO_FOLDER: "vlt_video_extract/OTHERS"   
+#This will be added to the end of dynamic prompt. As prompt for each segment should be created dynamically.  
+VAR_VIDEO_PROMPT_TEXT:   " Focus on key themes, what people are talking about, names of people who appeared and who are discussed and key locations.\ Highlight any brands, company names or logos that you see.\ Give me at least 4000 words describing it. \ Do not add any extra text to the description."  
+VAR_TEMPERATURE: 0.5 
+VAR_MAX_OUT_TOKENS: 8192 # can go up to 8192
+VAR_TOP_P: 0.8
+VAR_TOP_K: 40 
+VAR_MAX_REQUEST_PER_FILE: 25000 # up to 30000 max
+VAR_MEDIA_TYPES: "video/mp4" #comma separated string of mime_types
+VAR_INERTVALS: 600 #Seconds
+
+            

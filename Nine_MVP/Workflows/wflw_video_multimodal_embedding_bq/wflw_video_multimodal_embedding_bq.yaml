@@ -11,9 +11,8 @@ main:
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
          
             - MM_MODEL: "multimodalembedding@001" 
-            - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk" #"vlt_multimodal_endpoint"#
-            - MODEL_NAME: "vlt_model_media_multimodal_embeddings"
-            - MEDIA_TYPES: "video/mp4" #comma separated string 
+            - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk" 
+            - MODEL_NAME: "vlt_model_media_multimodal_embeddings"           
         
             - METADATA_DATASET: "vlt_media_metadata_prelanding"
             - METADATA_TABLE: "vlt_video_metadata_bq" 
@@ -23,10 +22,11 @@ main:
             - VIDEO_METADATA_TABLE: "vlt_video_metadata" 
 
             - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")}           
-            - SOURCE_VIDEO_FOLDER: "vlt_video_extract/NINE_NIEWS"
-            - BATCH_SIZE: 1 #shouldnt be more that 25000 limit
-            - SEGMENT_LENGTH: 120
-            - INTERVALS : 120 
+            - SOURCE_VIDEO_FOLDER:   ${sys.get_env("VAR_SOURCE_VIDEO_FOLDER")}  
+            - BATCH_SIZE:   ${int(sys.get_env("VAR_BATCH_SIZE"))} 
+            - SEGMENT_LENGTH: ${int(sys.get_env("VAR_SEGMENT_LENGTH"))} 
+            - INTERVALS :  ${int(sys.get_env("VAR_INTERVALS"))}  
+            - MEDIA_TYPES:  ${sys.get_env("VAR_MEDIA_TYPES")}  
 
 
     # Step 1: Create metadata dataset
@@ -36,6 +36,7 @@ main:
           projectId: ${PROJECT}
           body:
             query: ${" CREATE SCHEMA IF NOT EXISTS " +METADATA_DATASET }
+            location: ${LOCATION}
             useLegacySql: false
 
      # Step 2: Create landing dataset

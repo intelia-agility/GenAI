@@ -1,0 +1,4 @@
+VAR_SOURCE_BUCKET: "raw_nine_files"
+VAR_SOURCE_IMAGE_FOLDER:   "2024"    
+VAR_BATCH_SIZE: 10000 # up to 25000 max
+VAR_MEDIA_TYPES: "image/jpeg,image/png" #comma separated string

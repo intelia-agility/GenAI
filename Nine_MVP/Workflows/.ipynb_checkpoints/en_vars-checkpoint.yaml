@@ -1,2 +1,0 @@
-VAR_SOURCE_BUCKET: "raw_nine_files"
-VAR_DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"

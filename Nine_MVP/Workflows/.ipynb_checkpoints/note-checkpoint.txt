@@ -1,9 +1,4 @@
 gcloud workflows deploy test_20241014 --source=test_20241014.yaml\
  --env-vars-file en_vars.yaml
  
- 
- vars for:
- wflw_image_contentgeneration_batch
- wflw_image_multimodal_embedding.yaml
- wflw_video_cachedcontext_contentgeneration.yaml
- wflw_video_multimodal_embedding.yaml
+  

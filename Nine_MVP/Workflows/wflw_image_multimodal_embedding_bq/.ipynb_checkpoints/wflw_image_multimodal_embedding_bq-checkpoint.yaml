@@ -13,7 +13,7 @@ main:
             - MM_MODEL: "multimodalembedding@001" 
             - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk" #"vlt_multimodal_endpoint"#
             - MODEL_NAME: "vlt_model_media_multimodal_embeddings"
-            - MEDIA_TYPES: "image/jpeg,image/png" #comma separated string 
+          
         
             - METADATA_DATASET: "vlt_media_metadata_prelanding"
             - METADATA_TABLE: "vlt_image_metadata_bq" 
@@ -21,10 +21,12 @@ main:
             - IMAGE_MULTIMODAL_EMBEDDING_TABLE: "vlt_image_multimodal_embeddings_bq" 
             - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
 
-            - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}           
-            - SOURCE_IMAGE_FOLDER: "2023"
-            - BATCH_SIZE: 25000 #shouldnt be more that 25000 limit
-
+            - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}            
+            - SOURCE_IMAGE_FOLDER: ${sys.get_env("VAR_SOURCE_IMAGE_FOLDER")} 
+            - BATCH_SIZE: ${sys.get_env("VAR_BATCH_SIZE")} 
+            - MEDIA_TYPES:  ${sys.get_env("VAR_MEDIA_TYPES")} 
+          
+          
     # Step 1: Create metadata dataset
     - create_metadata_dataset:
         call:  googleapis.bigquery.v2.jobs.query
@@ -32,6 +34,7 @@ main:
           projectId: ${PROJECT}
           body:
             query: ${" CREATE SCHEMA IF NOT EXISTS " +METADATA_DATASET }
+            location: ${LOCATION}
             useLegacySql: false
 
      # Step 2: Create landing dataset

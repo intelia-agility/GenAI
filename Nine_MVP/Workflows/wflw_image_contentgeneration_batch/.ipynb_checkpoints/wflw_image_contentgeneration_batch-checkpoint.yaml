@@ -8,35 +8,31 @@ main:
         assign:
             - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
-            - SOURCE_BUCKET:  "raw_nine_files" #${sys.get_env("VAR_SOURCE_BUCKET")} 
-            - DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"#${sys.get_env("VAR_DESTINATION_BUCKET")} 
-            - SOURCE_IMAGE_FOLDER: "2023"           
+            - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")} 
+            - DESTINATION_BUCKET:  ${sys.get_env("VAR_DESTINATION_BUCKET")} 
+            - SOURCE_IMAGE_FOLDER:  ${sys.get_env("VAR_SOURCE_IMAGE_FOLDER")}  
+            - IMAGE_PROMPT_TEXT:  ${sys.get_env("VAR_IMAGE_PROMPT_TEXT")}            
+            - TEMPERATURE: ${sys.get_env("VAR_TEMPERATURE")} 
+            - MAX_OUT_TOKENS: ${sys.get_env("VAR_MAX_OUT_TOKENS")} 
+            - TOP_P:  ${sys.get_env("VAR_TOP_P")} 
+            - TOP_K:  ${sys.get_env("VAR_TOP_K")}     
+            - MAX_REQUEST_PER_FILE: ${sys.get_env("VAR_MAX_REQUEST_PER_FILE")} 
+            - MEDIA_TYPES:  ${sys.get_env("VAR_MEDIA_TYPES")} 
+            
+            - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk"  
+            - METADATA_DATASET: "vlt_media_metadata_prelanding"
+            - METADATA_TABLE: "vlt_image_batchrequest_metadata"
 
             - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+"batchPredictionJobs" }
             - MODEL: "publishers/google/models/gemini-1.5-pro-002"   # "publishers/google/models/gemini-1.5-flash-002"
-            - MEDIA_TYPES: "image/jpeg,image/png"
-
-            - FUNC_CREATE_GCS_BATCH_REQUEST: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_batchrequest_file"}
-            
-            
+              
             - REQUEST_FOLDER: "image_batch_request_fldr"
             - REQUEST_FOLDER_JOB: ${text.replace_all(text.replace_all(text.replace_all(REQUEST_FOLDER+time.format(sys.now()),":",""),".",""),"-","")}
             - REQUEST_FILE_PREFIX: ${REQUEST_FOLDER_JOB+"/"+"image_request"}
             - PROCESSED_REQUEST_FOLDER: "processed_image_batch_request_fldr"
             - ERROR_PROCESSED_REQUEST_FOLDER: "error_image_batch_request_fldr"
             - BATCH_PREDICTION_FOLDER: "image_batch_prediction_fldr_out"
-            - BATCH_OUTPUT: []           
-            - IMAGE_PROMPT_TEXT: "Describe this image in detail. If there is a text in the image mention that. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\
-                                Give me at least 1500 words describing it. If you are not sure about any info, please do not make it up. Do not add any extra text to the output"
-
-            - TEMPERATURE: 0.5
-            - MAX_OUT_TOKENS: 2048 # can go up to 8192
-            - TOP_P: 0.8
-            - TOP_K: 40    
-            - MAX_REQUEST_PER_FILE: 25000 # up to 30000 max
-            - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk" #"vlt_multimodal_endpoint"#
-            - METADATA_DATASET: "vlt_media_metadata_prelanding"
-            - METADATA_TABLE: "vlt_image_batchrequest_metadata"
+            - BATCH_OUTPUT: [] 
             - item: {}
 
     # Step 1: Create new request file(s)
