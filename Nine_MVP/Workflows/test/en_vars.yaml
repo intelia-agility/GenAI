@@ -1,7 +1,7 @@
-VAR_SOURCE_BUCKET: "raw_nine_files"
-VAR_SOURCE_VIDEO_FOLDER: "vlt_video_extract/OTHERS"   
-VAR_BATCH_SIZE: 10000 # up to 25000 max
-VAR_MEDIA_TYPES:   "video/mp4" #comma separated string 
-VAR_SEGMENT_LENGTH: 120 # seconds ( shouldnt be more thatn 2 minutes)
-VAR_INTERVALS: 120 # seconds ( could be 16 seconds - shouldnt be more thatn 2 minutes)
+VAR_METADATA_COLUMNS:  "asset_id" # Comma separated string
+VAR_PAGE_CONTENT_COLUMNS: "content,test_metadata"  # Comma separated string
+VAR_SOURCE_QUERY: "SELECT id as asset_id,media_type,content,test_metadata, path  FROM `nine-quality-test.Nine_Quality_Test.test_long_artcles` ;"        
+VAR_CHUNK_SIZE: 500
+VAR_CHUNK_OVERLAP:  10
+VAR_MAX_PROMPT_COUNT_LIMIT: 2 #30000 #Maximum number of requests per batch; currently, the API has a limit of 30,000 prompts
 

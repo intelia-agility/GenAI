@@ -110,8 +110,8 @@ def chunk_bq_content(request_args):
     dataset_id=  request_args['dataset']
     table= request_args['table']
     region= request_args['region']
-    metadata_columns= [col.strip() for col in  str(request_args['metadata_columns']).split(',') ]
-    page_content_columns= [col.strip() for col in str(request_args['page_content_columns']).split(',') ]
+    metadata_columns= [str(request_args['metadata_columns'])  ]
+    page_content_columns= [str(request_args['page_content_columns'])]
     source_query_str= request_args['source_query_str']
     #separators= "\n" if str(request_args['separators'])=="" else str(request_args['separators']).split(',') 
     chunk_size= 1000 if str(request_args['chunk_size']) in ["None",""] else int(str(request_args['chunk_size']))  
@@ -144,7 +144,7 @@ def chunk_bq_content(request_args):
     # now = datetime.now()
     # Add chunk number to metadata
     chunk_idx=0
-    prev=doc_splits[0].metadata["asset_id"]
+    prev=doc_splits[0].metadata[metadata_columns[0]]
     rows_to_insert=[]
     #request_date=datetime.today().strftime('%Y_%m_%d') 
     now = datetime.now()
@@ -159,21 +159,21 @@ def chunk_bq_content(request_args):
     job_execution_result={}
     for idx, split in enumerate(doc_splits):
             split.metadata["process_time"]=now
-            if prev==split.metadata["asset_id"]:
+            if prev==split.metadata[metadata_columns[0]]:
                split.metadata["chunk"] = chunk_idx      
             else:
                 chunk_idx=0
                 split.metadata["chunk"] = chunk_idx
-                prev=split.metadata["asset_id"]
+                prev=split.metadata[metadata_columns[0]]
                 
             chunk_idx +=1
             version=idx // max_index
             request_id = prefix+'_'+str(version)
             rows_to_insert.append(
                                {  "request_id":  request_id  , 
-                                   "asset_id": split.metadata["asset_id"], 
+                                   "asset_id": split.metadata[metadata_columns[0]], 
                                    "process_time":split.metadata["process_time"].isoformat(),
-                                   "content":  split.page_content,
+                                   "content": split.page_content.replace(page_content_columns[0]+":", "", 1).strip(),
                                    #"original_content": split.metadata["content"],
                                    "chunk": split.metadata["chunk"],
                                    #"media_type": split.metadata["media_type"],

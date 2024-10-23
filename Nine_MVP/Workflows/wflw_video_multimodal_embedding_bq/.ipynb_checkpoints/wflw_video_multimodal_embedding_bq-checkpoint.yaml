@@ -19,7 +19,7 @@ main:
             - LANDING_DATASET:  "vlt_media_multimodal_embeddings_prelanding"
             - VIDEO_MULTIMODAL_EMBEDDING_TABLE: "vlt_video_multimodal_embeddings_bq" 
             - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
-            - VIDEO_METADATA_TABLE: "vlt_video_metadata" 
+            - VIDEO_METADATA_TABLE: "vlt_video_duration_metadata" 
 
             - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")}           
             - SOURCE_VIDEO_FOLDER:   ${sys.get_env("VAR_SOURCE_VIDEO_FOLDER")}  

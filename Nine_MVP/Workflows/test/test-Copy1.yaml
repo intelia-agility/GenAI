@@ -1,4 +1,4 @@
-### This is the workflow to extract multimodal embeddings from videos using biqquery ML
+### This is the workflow to extract multimodal embeddings from images using biqquery ML
 
 main:
   #params: [input]
@@ -19,13 +19,13 @@ main:
             - LANDING_DATASET:  "vlt_media_multimodal_embeddings_prelanding"
             - VIDEO_MULTIMODAL_EMBEDDING_TABLE: "vlt_video_multimodal_embeddings_bq" 
             - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
-            - VIDEO_METADATA_TABLE: "vlt_video_duration_metadata" 
+            - VIDEO_METADATA_TABLE: "vlt_video_metadata" 
 
             - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")}           
             - SOURCE_VIDEO_FOLDER:   ${sys.get_env("VAR_SOURCE_VIDEO_FOLDER")}  
-            - BATCH_SIZE:   ${int(sys.get_env("VAR_BATCH_SIZE"))} 
-            - SEGMENT_LENGTH: ${int(sys.get_env("VAR_SEGMENT_LENGTH"))} 
-            - INTERVALS :  ${int(sys.get_env("VAR_INTERVALS"))}  
+            - BATCH_SIZE:   ${sys.get_env("VAR_BATCH_SIZE")} 
+            - SEGMENT_LENGTH: ${sys.get_env("VAR_SEGMENT_LENGTH")} 
+            - INTERVALS :  ${sys.get_env("VAR_INTERVALS")}  
             - MEDIA_TYPES:  ${sys.get_env("VAR_MEDIA_TYPES")}  
 
 

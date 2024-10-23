@@ -7,101 +7,94 @@ main:
         assign:
             - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+            - METADATA_COLUMNS: ${sys.get_env("VAR_METADATA_COLUMNS")} 
+            - PAGE_CONTENT_COLUMNS: ${sys.get_env("VAR_PAGE_CONTENT_COLUMNS")}  
+            - SOURCE_QUERY: ${sys.get_env("VAR_SOURCE_QUERY")}  
+            - CHUNK_SIZE: ${int(sys.get_env("VAR_CHUNK_SIZE"))}  
+            - CHUNK_OVERLAP:  ${int(sys.get_env("VAR_CHUNK_OVERLAP"))}  
+            - MAX_PROMPT_COUNT_LIMIT: ${int(sys.get_env("VAR_MAX_PROMPT_COUNT_LIMIT"))}   
+            
             - CONTENT_METHOD: "batchPredictionJobs" 
             - LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+CONTENT_METHOD}
             - TEXT_EMBEDDING_MODEL: "publishers/google/models/textembedding-gecko"
 			
-            - DATASET_ID: "langchain_dataset"
-            - TABLE_ID: "chucked_data"
-            - METADATA_COLUMNS: "id,content,path,media_type,test_metadata"
-            - PAGE_CONTENT_COLUMNS: "content,test_metadata"
-            - SOURCE_QUERY: "SELECT id,media_type,content,test_metadata, path  FROM `nine-quality-test.Nine_Quality_Test.test_long_artcles` ;" 
-            - FUNC_CHUNK_BG_CONTENT: "https://us-central1-nine-quality-test.cloudfunctions.net/func_chunk_bq_content"
-            #- SEPARATORS: "\n"
-            - CHUNK_SIZE: 500
-            - CHUNK_OVERLAP: 10
-            - MAX_PROMPT_COUNT_LIMIT: 2 #30000 #Maximum number of requests per batch; currently, the API has a limit of 30,000 prompts
+            - DATASET_ID: "vlt_media_content_text_embeddings_prelanding"
+            - TABLE_ID: ${"chucked_content_data_"+text.replace_all(text.replace_all( text.replace_all( time.format(sys.now()),"-","_"),":",""),".","")}
+           
   
             - BATCH_OUTPUT: []
-            
+
     
     #Step 1: Chunck content and load them into big query table
-
+    # Used container and artifact registery to handle long running scripts as functions have 1 hour limit
     - chunk_bq_content:
-        call: http.post
+        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run 
         args:
-            url: ${FUNC_CHUNK_BG_CONTENT}
-            query:
-                name: "CHUNK CONTENT"            
-                project_id: ${PROJECT}
-                dataset: ${DATASET_ID}
-                table: ${TABLE_ID} 
-                region:  ${LOCATION}              
-                metadata_columns:  ${METADATA_COLUMNS}
-                page_content_columns: ${PAGE_CONTENT_COLUMNS}
-                source_query_str: ${SOURCE_QUERY}
-                #separators: ${SEPARATORS}    #we use Langchain's defualt separators        
-                chunk_size: ${CHUNK_SIZE}
-                chunk_overlap: ${CHUNK_OVERLAP}
-                max_prompt_count_limit: ${MAX_PROMPT_COUNT_LIMIT}
-        result:  chunking_result_set
+            workflow_id: "wflw_chunk_bq_content"
+            location: ${LOCATION}
+            project_id: ${PROJECT}
+            argument: {
+                            project_id: '${PROJECT}',
+                            region:  '${LOCATION}', 
+                            job_description: "chunk-text-contents" , 
+                            table: '${TABLE_ID}',
+                            dataset: '${DATASET_ID}', 
+                            metadata_columns:  '${METADATA_COLUMNS}',
+                            page_content_columns: '${PAGE_CONTENT_COLUMNS}',
+                            source_query_str: '${SOURCE_QUERY}',
+                            chunk_size: '${CHUNK_SIZE}',
+                            chunk_overlap: '${CHUNK_OVERLAP}',
+                            max_prompt_count_limit: '${MAX_PROMPT_COUNT_LIMIT}'
+                           }  
+        result: result
 
-    #Step 2: Check if data is loaded into bigquery successfully
-    # exit the workflow and return failure even if one load job is faile
-    - check_bigquery_load:
-        for:
-           value: job_id
-           in: ${chunking_result_set.body.jobs}
-           steps:
-                 #Step 3: Get job state
-                - get_bigquery_load_job_status:
-                    call:  googleapis.bigquery.v2.jobs.get 
-                    args:
-                        jobId: ${job_id}
-                        projectId: ${PROJECT}
-                        location : ${LOCATION}     
-                    result: load_job_result
-                
-                 # Step 4: check the if load is done sucessfully for all jobs, otherwise exit
-                - checkIfLoadDone: 
-                        switch:
-                              - condition: ${load_job_result.status.state=="DONE" and "errors" in load_job_result.status}
-                                steps:
-                                    - return_load_failure:
-                                        assign:
-                                            - out_result:
-                                                output_table: ""
-                                                state: "BIGQUERY LOAD FAILED- CHECK THE LOGS"                                          
-                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}
-                                    - exit:
-                                        return: ${BATCH_OUTPUT}
+      #Step 2: Check if any file is created
+    - if_requestfile_generated:
+            switch:
+                - condition: ${ result.state=="SUCCEEDED"}
+                  steps:
+                        - is_generated:   
+                            next: get_chunked_tables_count
+                - condition: ${result.state !="SUCCEEDED"}
+                  steps:
+                        - not_generated:   
+                            return: ${"Data is not chunked- Check the source content table or batch job logs "+ result.name}
 
-                              - condition:  ${load_job_result.status.state in ["PENDING", "RUNNING"] and  not( "errors" in load_job_result.status)}
-                                steps:
-                                    - bg_load_wait:
-                                        call: sys.sleep
-                                        args:
-                                            seconds: 120
-                                        next: get_bigquery_load_job_status
-                                 
-    
+     #Step 3: Get number of chunked tables
+    - get_chunked_tables_count:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${"SELECT COUNT(*) AS chunked_tables_count FROM `"+DATASET_ID+".INFORMATION_SCHEMA.TABLES` WHERE table_name LIKE '"+TABLE_ID+"%' "}
+            useLegacySql: false
+        result: response
+
+
     - log_chunking:
         call: sys.log
         args:
-          text: ${"Data Is Chunked and Loaded - " + "Count of Created Tables "+ string(chunking_result_set.body.count_of_tables)}
-       
+          text: ${"Data Is Chunked and Loaded - Tables Prefix " + TABLE_ID +", "+ "Table Count "+ string(int(response.rows[0].f[0]["v"]))}
+
+   #Step 4: Get number of chunked tables
+    - set_vars:
+        assign:
+            - count_of_tables: ${int(response.rows[0].f[0]["v"])}
+            - response: null
+
+           
     #Step 5: Loop over created tables and send batch requests
     # Each table can only be up to 30,000 request
     - loop_over_request_tables:
         for:
            value: version
-           range: ${[0, chunking_result_set.body.count_of_tables-1]}
+           range: ${[0, count_of_tables-1]}
            steps:
                  #Step 6: Set the big query table 
                  
                 - set_table_name:
                     assign:
-                        - table_name: ${chunking_result_set.body.table_name_prefix+"_"+ string(version)}
+                        - table_name: ${TABLE_ID+"_"+ string(version)}
                         - bigquery_table: ${"bq://"+PROJECT+"."+DATASET_ID+"."+table_name}
                         - job_name: ${DATASET_ID+"."+table_name}
                     

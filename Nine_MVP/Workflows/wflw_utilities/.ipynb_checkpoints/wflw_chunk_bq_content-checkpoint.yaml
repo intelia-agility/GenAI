@@ -1,0 +1,93 @@
+main:
+  params: [input]
+  steps:
+    - set_input_variables:
+        steps:
+            - assign_common_vars:
+                assign: 
+                    - input_vars:
+                                project_id: ${input.project_id}
+                                dataset: ${input.dataset}
+                                table: ${input.table}
+                                region: ${input.region} 
+                                metadata_columns:  ${input.metadata_columns}  
+                                page_content_columns:  ${input.page_content_columns}
+                                source_query_str: ${input.source_query_str}
+                                chunk_size: ${string(input.chunk_size)}
+                                chunk_overlap: ${string(input.chunk_overlap)}
+                                max_prompt_count_limit: ${string(input.max_prompt_count_limit)}
+                             
+                    - projectId:  ${input.project_id}
+                    - region:  ${input.region}
+                    - imageUri: ${region + "-docker.pkg.dev/" + projectId + "/vlt-chunk-bq-content-docker/chunk-bq-content:v1.00"}
+                    - jobId: ${input.job_description+"-"+ string(int(sys.now()))}
+
+    - logCreateBatchJob:
+        call: sys.log
+        args:
+          data: ${"Creating and running the batch job " + jobId}
+    - createAndRunBatchJob:
+        call: googleapis.batch.v1.projects.locations.jobs.create
+        args:
+            parent: ${"projects/" + projectId + "/locations/" + region}
+            jobId: ${jobId}
+            body:
+              taskGroups:
+                taskSpec:
+                  runnables:
+                    - container:
+                        imageUri: ${imageUri}
+                      environment:
+                        variables:
+                               ${input_vars }
+                  computeResource: {
+                        "cpuMilli": 1000, # 8cpu
+                        "memoryMib": 512  #32 GB of memory 
+                        }
+                 
+
+                # Run 1 tasks on 1 VMs
+                taskCount: 1
+                parallelism: 3
+   
+                 
+              allocationPolicy: {
+                            "instances": [
+                            {
+                                "policy": {
+                                "machineType": "e2-standard-4",
+                                "provisioningModel": "SPOT"
+                                }
+                            }
+                            ]
+                        }
+              logsPolicy:               
+                destination: CLOUD_LOGGING
+        result: createAndRunBatchJobResponse
+
+    - get_job_status: 
+        call: googleapis.batch.v1.projects.locations.jobs.get
+        args:
+            name: ${createAndRunBatchJobResponse.name}
+        result:  listResult
+ 
+    # Step 10: Check the job status if succeeded or failed return
+    #Move the request file to processed if successfully executed
+    - checkIfDone: 
+            switch:
+                - condition: ${listResult.status.state in ["CANCELLED","FAILED","SUCCEEDED"]}
+                  next: returnResult
+                - condition: ${listResult.status.state in ["SCHEDULED","RUNNING","PENDING","ASSIGNED"]}
+                  steps:    
+                      - wait:
+                          call: sys.sleep
+                          args:
+                              seconds: 5
+                          next: get_job_status
+
+    - returnResult:
+        return: {"state": "${listResult.status.state}", "name": "${listResult.name}" }
+      
+     
+
+ 
