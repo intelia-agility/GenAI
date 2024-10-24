@@ -98,26 +98,86 @@ def create_table(project_id,dataset_id,table_id):
         
     return schema
 
+def load_into_bq(table_prefix: str,project_id: str,dataset_id: str, region: str, data: list,  version: int):  
+    """
+        Create a job to load data into big query table and wait for the job to finish 
+        
+        Args:
+           str table_prefix: the prefix of biquery table name
+           str project_id: project id
+           str dataset_id: name of the dataset under which the table should be created.
+           list(json) data: list of json records that should be inserted into table.
+     
+             
+    """    
+    client = bigquery.Client(project_id)    
+   
+    
+    #create table new if does not exist
+    table=f"{table_prefix}_{version}"
+    table_schema=create_table(project_id,dataset_id,table)
+    #push the data into the table
+    table_id = f"{project_id}.{dataset_id}.{table}"
+    dataset  = client.dataset(dataset_id)
+    table = dataset.table(table)
+    job_config = bigquery.LoadJobConfig()
+    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+    job_config.schema = table_schema
+    job = client.load_table_from_json(data, table, job_config = job_config)
+              
+    #wait for the job to finish
+    job.result()
+    # Get job status   
+                
+    if job.state == 'DONE':
+        if job.error_result:
+             print(f"Job {job.job_id} for {table_id} failed with error: {job.error_result}")
+             raise Exception("Sorry, no numbers below zero")
+        else:
+             print(f"Job {job.job_id} completed successfully. For "+ table_id)
+    else:
+            print(f"Job {job.job_id} for {table_id} is still in progress.")
+                
+
+
 def chunk_bq_content(request_args):
     """
         Chunks the combination of page_content_columns from a given bigquery source string and load the result into bigquery
              
     """
-    status=''  
-  
-   
+    status=''   
+
+    # try:
     project_id=  request_args['project_id']
     dataset_id=  request_args['dataset']
     table= request_args['table']
     region= request_args['region']
-    metadata_columns= [str(request_args['metadata_columns'])  ]
-    page_content_columns= [str(request_args['page_content_columns'])]
+    metadata_columns= [col.strip() for col in  str(request_args['metadata_columns']).split(',') ]
+    page_content_columns= [col.strip() for col in str(request_args['page_content_columns']).split(',') ]
     source_query_str= request_args['source_query_str']
     #separators= "\n" if str(request_args['separators'])=="" else str(request_args['separators']).split(',') 
     chunk_size= 1000 if str(request_args['chunk_size']) in ["None",""] else int(str(request_args['chunk_size']))  
-    chunk_overlap= 0 if str(request_args['chunk_overlap']) in ["None",""] else int(str(request_args['chunk_overlap'])) 
+    chunk_overlap=100 if str(request_args['chunk_overlap']) in ["None",""] else int(str(request_args['chunk_overlap'])) 
     max_prompt_count_limit=30000 if str(request_args['max_prompt_count_limit']) in ["None",""] else int(str(request_args['max_prompt_count_limit'])) 
+
+
+#     except:        
+#             project_id= 'nine-quality-test' 
+#             dataset_id= 'langchain_dataset'
+#             table= "chucked_content_data_2024_10_24T014648231552Z"
+#             region= 'us-central1'
+#             metadata_columns= ["asset_id"]
+#             page_content_columns= ["HeadLine","Content"]
+#             source_query_str= """
+#            SELECT asset_id, headline as HeadLine, plain_text_column as Content  FROM `nine-quality-test.vlt_media_content_prelanding.vlt_article_content` ;
+#             """
    
+#             chunk_size= 1000
+#             chunk_overlap= 100
+#             max_prompt_count_limit=25000
+#             #return {'record_count':0, 'status':'ERROR- Set required input parameters'}
+             
+                
             
      # Load the data
     loader = BigQueryLoader(
@@ -127,7 +187,7 @@ def chunk_bq_content(request_args):
     documents = []
     documents.extend(loader.load())
     
-    logging.info (f"Data Loaded from source - {source_query_str}")
+    print(f"Data Loaded from source - {source_query_str}")
 
 
     # Split the documents into chunks
@@ -138,7 +198,7 @@ def chunk_bq_content(request_args):
     )
     doc_splits = text_splitter.split_documents(documents)    
      
-    logging.info (f"Documents splitted - chunk_size {chunk_size}, chunk_overlap {chunk_overlap}")
+    print(f"Documents splitted - chunk_size {chunk_size}, chunk_overlap {chunk_overlap}")
 
     # # get current processing time to add it to metadata, datetime object containing current date and time
     # now = datetime.now()
@@ -147,11 +207,11 @@ def chunk_bq_content(request_args):
     prev=doc_splits[0].metadata[metadata_columns[0]]
     rows_to_insert=[]
     #request_date=datetime.today().strftime('%Y_%m_%d') 
-    now = datetime.now()
-        
-    client = bigquery.Client(project_id)    
+    now = datetime.now()    
+    
     #create data set if does not exist
     create_dataset(project_id,dataset_id,region)
+   
     max_index=max_prompt_count_limit #maximum number of requests in a batch
     record_count=0
     prefix=f"{table}" 
@@ -169,11 +229,17 @@ def chunk_bq_content(request_args):
             chunk_idx +=1
             version=idx // max_index
             request_id = prefix+'_'+str(version)
+            
+            if chunk_idx==1:                
+                 content=split.page_content  
+            else:                  
+                  content=page_content_columns[1]+": "+split.page_content 
+                
             rows_to_insert.append(
                                {  "request_id":  request_id  , 
                                    "asset_id": split.metadata[metadata_columns[0]], 
                                    "process_time":split.metadata["process_time"].isoformat(),
-                                   "content": split.page_content.replace(page_content_columns[0]+":", "", 1).strip(),
+                                   "content": content,#.replace(page_content_columns[0]+":", "", 1).strip(),
                                    #"original_content": split.metadata["content"],
                                    "chunk": split.metadata["chunk"],
                                    #"media_type": split.metadata["media_type"],
@@ -183,38 +249,20 @@ def chunk_bq_content(request_args):
                                   }
                                          )
             
-            if (idx+1) % max_index==0:
-               
-                #create table new if does not exist
-                table=f"{prefix}_{version}"
-                table_schema=create_table(project_id,dataset_id,table)
-                #push the data into the table
-                table_id = f"{project_id}.{dataset_id}.{table}"
-                dataset  = client.dataset(dataset_id)
-                table = dataset.table(table)
-                job_config = bigquery.LoadJobConfig()
-                job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-                job_config.schema = table_schema
-                job = client.load_table_from_json(rows_to_insert, table, job_config = job_config)
+            if (idx+1) % max_index==0:  
+                load_into_bq(prefix,project_id,dataset_id, region, rows_to_insert,version)
                 #moving to next batch
                 record_count=record_count+len(rows_to_insert)
-                rows_to_insert=[]              
-                #wait for the job to finish
-                job.result()
-                # Get job status   
+                rows_to_insert=[]   
+               
                 
-                if job.state == 'DONE':
-                    if job.error_result:
-                        print(f"Job {job.job_id} for {table_id} failed with error: {job.error_result}")
-                        job_execution_result['error_result']=job.error_result
-                        raise Exception("Sorry, no numbers below zero")
-                    else:
-                        print(f"Job {job.job_id} completed successfully. For "+ table_id)
-                else:
-                    print(f"Job {job.job_id} for {table_id} is still in progress.")
+    if  len(rows_to_insert)>0:       
+        load_into_bq(prefix,project_id,dataset_id, region, rows_to_insert,version)
+        #moving to next batch
+        record_count=record_count+len(rows_to_insert)
+        rows_to_insert=[]   
                 
-                job_list.append(job_execution_result)
-        
+    
   
     return   {'status':'SUCCESS', 'record_count':record_count,'count_of_tables':version+1 }
 
