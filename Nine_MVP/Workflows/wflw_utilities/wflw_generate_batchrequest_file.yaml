@@ -56,8 +56,8 @@ main:
                         variables:
                                ${input_vars }
                   computeResource: {
-                        "cpuMilli": 1000, # 8cpu
-                        "memoryMib": 512  #32 GB of memory 
+                        "cpuMilli": 4000, # 4cpu
+                        "memoryMib": 16384  #16 GB of memory 
                         }
                  
 
