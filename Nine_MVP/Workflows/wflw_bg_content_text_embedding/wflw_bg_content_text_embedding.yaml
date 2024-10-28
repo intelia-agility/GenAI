@@ -120,7 +120,7 @@ main:
                                             type: OAuth2
                                         body:
                                         
-                                            displayName: ${"PB_JOB_TEXT_EMBEDDING_"+job_name} 
+                                            displayName: ${"pb_job_text_embedding_"+job_name} 
                                             model: ${TEXT_EMBEDDING_MODEL}
                                             inputConfig: {
                                                     instancesFormat:"bigquery",
