@@ -8,8 +8,12 @@ main:
             - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
             - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
             - METADATA_COLUMNS: ${sys.get_env("VAR_METADATA_COLUMNS")} 
-            - PAGE_CONTENT_COLUMNS: ${sys.get_env("VAR_PAGE_CONTENT_COLUMNS")}  
-            - SOURCE_QUERY: ${sys.get_env("VAR_SOURCE_QUERY")}  
+            - PAGE_CONTENT_COLUMNS_IMAGES: ${sys.get_env("VAR_PAGE_CONTENT_COLUMNS_IMAGES")}  
+            - PAGE_CONTENT_COLUMNS_VIDEOS: ${sys.get_env("VAR_PAGE_CONTENT_COLUMNS_VIDEOS")}  
+            - PAGE_CONTENT_COLUMNS_ARTICLES: ${sys.get_env("VAR_PAGE_CONTENT_COLUMNS_ARTICLES")}  
+            - SOURCE_QUERY_IMAGES: ${sys.get_env("VAR_SOURCE_QUERY_IMAGES")} 
+            - SOURCE_QUERY_VIDEOS: ${sys.get_env("VAR_SOURCE_QUERY_VIDEOS")} 
+            - SOURCE_QUERY_ARTICLES: ${sys.get_env("VAR_SOURCE_QUERY_ARTICLES")}  
             - CHUNK_SIZE: ${int(sys.get_env("VAR_CHUNK_SIZE"))}  
             - CHUNK_OVERLAP:  ${int(sys.get_env("VAR_CHUNK_OVERLAP"))}  
             - MAX_PROMPT_COUNT_LIMIT: ${int(sys.get_env("VAR_MAX_PROMPT_COUNT_LIMIT"))}   
@@ -23,6 +27,8 @@ main:
            
   
             - BATCH_OUTPUT: []
+
+ 
 
     
     #Step 1: Chunck content and load them into big query table
@@ -40,14 +46,18 @@ main:
                             table: '${TABLE_ID}',
                             dataset: '${DATASET_ID}', 
                             metadata_columns:  '${METADATA_COLUMNS}',
-                            page_content_columns: '${PAGE_CONTENT_COLUMNS}',
-                            source_query_str: '${SOURCE_QUERY}',
+                            page_content_columns_images: '${PAGE_CONTENT_COLUMNS_IMAGES}',
+                            page_content_columns_videos: '${PAGE_CONTENT_COLUMNS_VIDEOS}',
+                            page_content_columns_articles: '${PAGE_CONTENT_COLUMNS_ARTICLES}',                           
+                            source_query_str_images: '${SOURCE_QUERY_IMAGES}',
+                            source_query_str_videos: '${SOURCE_QUERY_VIDEOS}',
+                            source_query_str_articles: '${SOURCE_QUERY_ARTICLES}',
                             chunk_size: '${CHUNK_SIZE}',
                             chunk_overlap: '${CHUNK_OVERLAP}',
                             max_prompt_count_limit: '${MAX_PROMPT_COUNT_LIMIT}'
                            }  
         result: result
-
+ 
       #Step 2: Check if any file is created
     - if_requestfile_generated:
             switch:
@@ -82,7 +92,9 @@ main:
             - count_of_tables: ${int(response.rows[0].f[0]["v"])}
             - response: null
 
-           
+    - r:
+        return: ${count_of_tables}
+        
     #Step 5: Loop over created tables and send batch requests
     # Each table can only be up to 30,000 request
     - loop_over_request_tables:

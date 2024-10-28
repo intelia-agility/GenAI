@@ -11,11 +11,16 @@ main:
                                 table: ${input.table}
                                 region: ${input.region} 
                                 metadata_columns:  ${input.metadata_columns}  
-                                page_content_columns:  ${input.page_content_columns}
-                                source_query_str: ${input.source_query_str}
+                                page_content_columns_images:  ${input.page_content_columns_images}
+                                page_content_columns_videos:  ${input.page_content_columns_videos}
+                                page_content_columns_articles:  ${input.page_content_columns_articles}
+                                source_query_str_images: ${input.source_query_str_images}
+                                source_query_str_videos: ${input.source_query_str_videos}
+                                source_query_str_articles: ${input.source_query_str_articles}
                                 chunk_size: ${string(input.chunk_size)}
                                 chunk_overlap: ${string(input.chunk_overlap)}
                                 max_prompt_count_limit: ${string(input.max_prompt_count_limit)}
+                                
                              
                     - projectId:  ${input.project_id}
                     - region:  ${input.region}

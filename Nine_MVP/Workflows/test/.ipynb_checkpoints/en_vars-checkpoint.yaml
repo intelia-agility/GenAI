@@ -1,7 +1,11 @@
-VAR_METADATA_COLUMNS:  "asset_id" # Comma separated string
-VAR_PAGE_CONTENT_COLUMNS: "content,test_metadata"  # Comma separated string
-VAR_SOURCE_QUERY: "SELECT id as asset_id,media_type,content,test_metadata, path  FROM `nine-quality-test.Nine_Quality_Test.test_long_artcles` ;"        
-VAR_CHUNK_SIZE: 500
-VAR_CHUNK_OVERLAP:  10
-VAR_MAX_PROMPT_COUNT_LIMIT: 2 #30000 #Maximum number of requests per batch; currently, the API has a limit of 30,000 prompts
+VAR_METADATA_COLUMNS:  "combined_id" # asset unique id
+VAR_PAGE_CONTENT_COLUMNS_IMAGES: "Content"  # asset Content column
+VAR_PAGE_CONTENT_COLUMNS_VIDEOS: "Content"  # asset Content column
+VAR_PAGE_CONTENT_COLUMNS_ARTICLES: "HeadLine, Content"  # asset Content column
+VAR_SOURCE_QUERY_IMAGES: "SELECT combined_id ,  description as Content   FROM `nine-quality-test.vlt_media_content_prelanding.vlt_combined_media_content` WHERE LOWER(ASSET_TYPE) LIKE '%image%' ;"    
+VAR_SOURCE_QUERY_VIDEOS: "SELECT combined_id , description as Content   FROM `nine-quality-test.vlt_media_content_prelanding.vlt_combined_media_content` WHERE LOWER(ASSET_TYPE) LIKE '%video%' ;" 
+VAR_SOURCE_QUERY_ARTICLES: "SELECT combined_id ,headline as HeadLine, description as Content   FROM `nine-quality-test.vlt_media_content_prelanding.vlt_combined_media_content` WHERE LOWER(ASSET_TYPE) LIKE '%article%' ;" 
+VAR_CHUNK_SIZE: 1000
+VAR_CHUNK_OVERLAP:  100
+VAR_MAX_PROMPT_COUNT_LIMIT: 25000 #30000 #Maximum number of requests per batch; currently, the API has a limit of 30,000 prompts
 

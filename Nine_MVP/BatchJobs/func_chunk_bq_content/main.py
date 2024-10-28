@@ -303,11 +303,23 @@ if __name__ == "__main__":
         if  'metadata_columns' in os.environ:
             request_args['metadata_columns']= os.environ.get('metadata_columns')
             
-        if  'page_content_columns' in os.environ:
-            request_args['page_content_columns']= os.environ.get('page_content_columns')
+        if  'article_page_content_columns' in os.environ:
+            request_args['article_page_content_columns']= os.environ.get('article_page_content_columns')
             
-        if  'source_query_str' in os.environ:
-            request_args['source_query_str']= os.environ.get('source_query_str')
+        if  'video_page_content_columns' in os.environ:
+            request_args['video_page_content_columns']= os.environ.get('video_page_content_columns')
+        
+        if  'image_page_content_columns' in os.environ:
+            request_args['image_page_content_columns']= os.environ.get('image_page_content_columns')
+            
+        if  'article_source_query_str' in os.environ:
+            request_args['article_source_query_str']= os.environ.get('article_source_query_str')
+            
+        if  'video_source_query_str' in os.environ:
+            request_args['video_source_query_str']= os.environ.get('video_source_query_str')
+           
+        if  'image_source_query_str' in os.environ:
+            request_args['image_source_query_str']= os.environ.get('image_source_query_str')
             
         if  'chunk_size' in os.environ:
             request_args['chunk_size']= os.environ.get('chunk_size')
@@ -317,7 +329,8 @@ if __name__ == "__main__":
             
         if  'max_prompt_count_limit' in os.environ:
             request_args['max_prompt_count_limit']= os.environ.get('max_prompt_count_limit')
-        
+
+    
         chunk_bq_content(request_args)
             
           
