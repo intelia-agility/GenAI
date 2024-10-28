@@ -1,0 +1,290 @@
+### This is the workflow to extract multimodal embeddings from images using biqquery ML
+
+main:
+  #params: [input]
+
+  steps:
+    # Step 1: Initialize variables
+    - init:
+        assign:
+            - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+         
+            - MM_MODEL: "multimodalembedding@001" 
+            - REMOTE_CONN_MODEL_GCS_ID: "vlt_remote_cnn_mdls_bglk" #"vlt_multimodal_endpoint"#
+            - MODEL_NAME: "vlt_model_media_multimodal_embeddings"
+            - MEDIA_TYPES: "video/mp4" #comma separated string 
+        
+            - METADATA_DATASET: "vlt_media_metadata_prelanding"
+            - METADATA_TABLE: "vlt_video_metadata_bq" 
+            - LANDING_DATASET:  "vlt_media_multimodal_embeddings_prelanding"
+            - VIDEO_MULTIMODAL_EMBEDDING_TABLE: "vlt_video_multimodal_embeddings_bq" 
+            - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
+            - VIDEO_METADATA_TABLE: "vlt_video_metadata" 
+
+            - SOURCE_BUCKET: "raw_nine_files"# ${sys.get_env("VAR_SOURCE_BUCKET")}           
+            - SOURCE_VIDEO_FOLDER: "vlt_video_extract/NINE_NIEWS"
+            - BATCH_SIZE: 1 #shouldnt be more that 25000 limit
+            - SEGMENT_LENGTH: 120
+            - INTERVALS : 120 
+
+
+    # Step 1: Create metadata dataset
+    - create_metadata_dataset:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${" CREATE SCHEMA IF NOT EXISTS " +METADATA_DATASET }
+            useLegacySql: false
+
+     # Step 2: Create landing dataset
+    - create_landing_dataset:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${" CREATE SCHEMA IF NOT EXISTS " +LANDING_DATASET }
+            useLegacySql: false
+
+
+      #Step 3: Load media metadata- video durations- into  big query table 
+    - load_video_durations:
+        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+        args:
+            workflow_id: "wflw_set_video_metadata"
+            location: ${LOCATION}
+            project_id: ${PROJECT}
+            argument: {
+                        SOURCE_BUCKET:  "${SOURCE_BUCKET}",
+                        SOURCE_VIDEO_FOLDER: "${SOURCE_VIDEO_FOLDER}",
+                        MEDIA_TYPES: "${MEDIA_TYPES}",
+                         REMOTE_CONN_MODEL_GCS_ID:  "${REMOTE_CONN_MODEL_GCS_ID}",
+                        METADATA_TABLE: "${VIDEO_METADATA_TABLE}",
+                        METADATA_DATASET: "${METADATA_DATASET}"
+                        
+                    }
+
+     # Step 4: Create Model
+    - create_multimodal_model:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${" CREATE OR REPLACE MODEL `"+METADATA_DATASET+"."+MODEL_NAME+"` REMOTE WITH CONNECTION `"+LOCATION+"."+REMOTE_CONN_MODEL_GCS_ID+"` OPTIONS(endpoint = '"+MM_MODEL+"');"}
+            useLegacySql: false
+         
+    - log_model_build:
+        call: sys.log
+        args:
+          text: ${"Multimodal Model Created - " }
+          
+    # Step 5: Create external table
+    - createExternalTable:
+        call: googleapis.bigquery.v2.jobs.insert
+        args:
+          projectId:  ${PROJECT}
+          body:
+            configuration:
+              query:
+                query: ${ 
+                  "CREATE OR REPLACE EXTERNAL TABLE `"+METADATA_DATASET+"."+METADATA_TABLE+"`"+
+                  " WITH CONNECTION `"+LOCATION+"."+REMOTE_CONN_MODEL_GCS_ID+"`"+
+                  " OPTIONS ( "+
+                    " object_metadata = 'SIMPLE', "+
+                    " uris = ['gs://"+SOURCE_BUCKET+"/"+SOURCE_VIDEO_FOLDER+"/*'])" }
+                useLegacySql: false
+              
+        result: queryJob
+
+    #Step 6: Check if data is loaded into bigquery successfully
+    # exit the workflow and return failure even if one load job is faile
+    - check_bigquery_load:
+          call:  googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+          args:
+            workflow_id: "wflw_bg_job_check"
+            location: ${LOCATION}
+            project_id: ${PROJECT}
+            argument: {
+                                  job_id:  "${queryJob.jobReference.jobId}",
+                                  project: "${PROJECT}",
+                                  location: "${LOCATION}" 
+                                  
+                                }    
+          result: load_job_result
+
+     # Step 7: check the if load is done sucessfully for all jobs, otherwise exit
+    - checkIfLoadDone: 
+          switch:
+              - condition: ${load_job_result.state =="JOB_FAILED"}
+                return: {"state": "BIGQUERY LOAD FAILED- CHECK THE LOGS"   }
+
+
+    - log_media_load:
+        call: sys.log
+        args:
+          text: ${"Media Metadata Object Table Loaded - " }
+          
+    #Step 8: Get media count
+    - get_media_count:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${"SELECT COUNT(*) AS media_count FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` LIMIT 1"}
+            useLegacySql: false
+        result: response
+
+    - log_media:
+        call: sys.log
+        args:
+          text: ${"Media Count Loaded - " +  string(int(response.rows[0].f[0]["v"]))}
+    
+    #Step 10: Check media count. exit if no media
+    - checkIfNoMedia: 
+        switch:
+            - condition: ${int(response.rows[0].f[0]["v"])<=0}
+              steps:
+                    - exitNoMedia:
+                        return: "No Media Found- Check The Media Folder"   
+
+
+     #Step 11: Inititalize variables for the inner loop
+    - initialize:
+        assign:         
+          - offset: 0
+          - limit: ${BATCH_SIZE}
+          - query: ${"CREATE OR REPLACE TABLE "+ "`"+LANDING_DATASET+"."+VIDEO_MULTIMODAL_EMBEDDING_TABLE+"` AS "}
+          - prev: 0          
+ 
+    #Step 12: Inititalize variables for the outer loop
+    - init_vars:
+        assign:                                  
+            - startSegment: ${prev}
+            - endSegment:  ${prev+SEGMENT_LENGTH}
+            - offset: 0
+
+     #Step 13: Get media count for next segment
+    - get_next_segment:
+            call:  googleapis.bigquery.v2.jobs.query
+            args:
+                projectId: ${PROJECT}
+                body:
+                    query: '${" SELECT COUNT(*) media_count FROM (SELECT 1 FROM `"+
+                                            METADATA_DATASET+"."+METADATA_TABLE+"` EVM
+                                            INNER JOIN `"+METADATA_DATASET+"."+VIDEO_METADATA_TABLE+"` VM
+                                            ON EVM.uri=VM.gcs_uri
+                                            WHERE VM.duration>=" + string(startSegment) +                                                    
+                                            " LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"}'
+                    useLegacySql: false
+            result: response
+
+    #Step 14: check if there are more segments to process   
+    - check_if_more_segments:
+            switch:
+                - condition: ${int(response.rows[0].f[0]["v"])==0}
+                  next: return_result 
+
+    #Step 15: Fetch the rows in batches and calculate multimodal embeddings
+    - fetchRows:
+                steps:
+                    - init_job_query:
+                        assign:
+                           #can not use inner join because it gives error that should directly read from object table 
+                            - table_query:  ${"  (SELECT EVM.*  FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` AS  EVM "+
+                                        " WHERE uri IN ( SELECT gcs_uri FROM `"+METADATA_DATASET+"."+VIDEO_METADATA_TABLE+"` AS  VM "+
+                                        " WHERE VM.duration>=" + string(startSegment) +
+                                        " ) LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"
+                                        }
+                            - struct_query: ${" STRUCT(TRUE AS flatten_json_output,"+
+                                                         string(startSegment)+ "  AS start_second,"+
+                                                          string(endSegment)+ " AS end_second,"+
+                                                           string(INTERVALS) + " AS interval_seconds))"}
+
+
+                            - job_query: '${query+ " SELECT *  FROM  ML.GENERATE_EMBEDDING ( MODEL" +"`"+ METADATA_DATASET+"."+MODEL_NAME+"`,"+ table_query+","+struct_query}'
+
+
+                    #Step 11-1: Extract Multimodal embeddings
+                    - extract_multimodal_embeddings:
+                        call: googleapis.bigquery.v2.jobs.insert
+                        args:
+                            projectId:   ${PROJECT}
+                            body:
+                                configuration:
+                                    query:
+                                        query:   ${job_query }
+                                        useLegacySql: false              
+                        result: queryJob 
+
+                    #Step 11-2: Get batch status
+                    - check_multimodal_embeddings_batch_status:
+                        call:  googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+                        args:
+                            workflow_id: "wflw_bg_job_check"
+                            location: ${LOCATION}
+                            project_id: ${PROJECT}
+                            argument: {
+                                                job_id:  "${queryJob.jobReference.jobId}",
+                                                project: "${PROJECT}",
+                                                location: "${LOCATION}" 
+                                                
+                                                }    
+                        result: load_job_result
+
+                    # Step 11-3: check the if embeddings are extracted successfully
+                    # in the case of failure, exit
+                    - checkIfBatchDone: 
+                        switch:
+                            - condition: ${load_job_result.state =="JOB_FAILED"}
+                              return: {"state": "Video Multimodal Embeddings Batch Failed- CHECK THE LOGS"    }
+
+                    - log_batch_execution:
+                        call: sys.log
+                        args:
+                            text: ${"Batch Finished - " +string(limit) + " Loaded From "+string(offset) +" " }
+
+                    # Step 11-4: Set the variables for fetching next batch
+                    - updateOffset:
+                        assign:
+                            - offset: ${offset + limit}
+
+                    # Step 11-5: Set the query to Insert into instead of create table
+                    - update_query:
+                        assign:
+                        - query: ${" INSERT INTO "+ "`"+LANDING_DATASET+"."+VIDEO_MULTIMODAL_EMBEDDING_TABLE+"` " }
+
+                    #Step 11-6: Get media count for next batch
+                    - get_next_batch:
+                        call:  googleapis.bigquery.v2.jobs.query
+                        args:
+                            projectId: ${PROJECT}
+                            body:
+                                query: '${" SELECT COUNT(*) media_count FROM (SELECT 1 FROM `"+
+                                        METADATA_DATASET+"."+METADATA_TABLE+"` EVM
+                                        INNER JOIN `"+METADATA_DATASET+"."+VIDEO_METADATA_TABLE+"` VM
+                                        ON EVM.uri=VM.gcs_uri
+                                        WHERE VM.duration>=" + string(startSegment) +                                                    
+                                        " LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"}'
+                                useLegacySql: false
+                        result: response
+                        
+                    #Step 11-7: check if there are more records
+                    # if yes, loop again
+                    - check_if_more_batch:
+                            switch:
+                                - condition: ${int(response.rows[0].f[0]["v"])>0}
+                                  next: fetchRows 
+
+    # Step 12: Set the variables for fetching next batch
+    - updateSegment:
+            assign:
+                - prev: ${endSegment}
+            next: init_vars
+
+    - return_result:
+         return: {"status": "SUCCESS", "output_dataset": "${LANDING_DATASET}", "output_table":"${VIDEO_MULTIMODAL_EMBEDDING_TABLE}"}
+
+                
+
+

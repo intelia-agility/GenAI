@@ -1,0 +1,183 @@
+main:
+  params: [input]
+
+  steps:
+    # Step 1: Retrieve the bucket name from an environment variable
+    - init:
+        assign:
+            - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+            - METADATA_COLUMNS: ${sys.get_env("VAR_METADATA_COLUMNS")} 
+            - PAGE_CONTENT_COLUMNS: ${sys.get_env("VAR_PAGE_CONTENT_COLUMNS")}  
+            - SOURCE_QUERY: ${sys.get_env("VAR_SOURCE_QUERY")}  
+            - CHUNK_SIZE: ${int(sys.get_env("VAR_CHUNK_SIZE"))}  
+            - CHUNK_OVERLAP:  ${int(sys.get_env("VAR_CHUNK_OVERLAP"))}  
+            - MAX_PROMPT_COUNT_LIMIT: ${int(sys.get_env("VAR_MAX_PROMPT_COUNT_LIMIT"))}   
+            
+            - CONTENT_METHOD: "batchPredictionJobs" 
+            - LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+CONTENT_METHOD}
+            - TEXT_EMBEDDING_MODEL: "publishers/google/models/textembedding-gecko"
+			
+            - DATASET_ID: "vlt_media_content_text_embeddings_prelanding"
+            - TABLE_ID: ${"chucked_content_data_"+text.replace_all(text.replace_all( text.replace_all( time.format(sys.now()),"-","_"),":",""),".","")}
+           
+  
+            - BATCH_OUTPUT: []
+
+    
+    #Step 1: Chunck content and load them into big query table
+    # Used container and artifact registery to handle long running scripts as functions have 1 hour limit
+    - chunk_bq_content:
+        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run 
+        args:
+            workflow_id: "wflw_chunk_bq_content"
+            location: ${LOCATION}
+            project_id: ${PROJECT}
+            argument: {
+                            project_id: '${PROJECT}',
+                            region:  '${LOCATION}', 
+                            job_description: "chunk-text-contents" , 
+                            table: '${TABLE_ID}',
+                            dataset: '${DATASET_ID}', 
+                            metadata_columns:  '${METADATA_COLUMNS}',
+                            page_content_columns: '${PAGE_CONTENT_COLUMNS}',
+                            source_query_str: '${SOURCE_QUERY}',
+                            chunk_size: '${CHUNK_SIZE}',
+                            chunk_overlap: '${CHUNK_OVERLAP}',
+                            max_prompt_count_limit: '${MAX_PROMPT_COUNT_LIMIT}'
+                           }  
+        result: result
+
+      #Step 2: Check if any file is created
+    - if_requestfile_generated:
+            switch:
+                - condition: ${ result.state=="SUCCEEDED"}
+                  steps:
+                        - is_generated:   
+                            next: get_chunked_tables_count
+                - condition: ${result.state !="SUCCEEDED"}
+                  steps:
+                        - not_generated:   
+                            return: ${"Data is not chunked- Check the source content table or batch job logs "+ result.name}
+
+     #Step 3: Get number of chunked tables
+    - get_chunked_tables_count:
+        call:  googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT}
+          body:
+            query: ${"SELECT COUNT(*) AS chunked_tables_count FROM `"+DATASET_ID+".INFORMATION_SCHEMA.TABLES` WHERE table_name LIKE '"+TABLE_ID+"%' "}
+            useLegacySql: false
+        result: response
+
+
+    - log_chunking:
+        call: sys.log
+        args:
+          text: ${"Data Is Chunked and Loaded - Tables Prefix " + TABLE_ID +", "+ "Table Count "+ string(int(response.rows[0].f[0]["v"]))}
+
+   #Step 4: Get number of chunked tables
+    - set_vars:
+        assign:
+            - count_of_tables: ${int(response.rows[0].f[0]["v"])}
+            - response: null
+
+           
+    #Step 5: Loop over created tables and send batch requests
+    # Each table can only be up to 30,000 request
+    - loop_over_request_tables:
+        for:
+           value: version
+           range: ${[0, count_of_tables-1]}
+           steps:
+                 #Step 6: Set the big query table 
+                 
+                - set_table_name:
+                    assign:
+                        - table_name: ${TABLE_ID+"_"+ string(version)}
+                        - bigquery_table: ${"bq://"+PROJECT+"."+DATASET_ID+"."+table_name}
+                        - job_name: ${DATASET_ID+"."+table_name}
+                    
+                # Step 7: Extract text embeddings by running batch prediction job
+                - extract_embeddings:        
+                            steps:
+                                - ask_llm:
+                                    call: http.post
+                                    args:
+                                        url: ${LLM_API_ENDPOINT}
+                                        auth:
+                                            type: OAuth2
+                                        body:
+                                        
+                                            displayName: ${"PB_JOB_TEXT_EMBEDDING_"+job_name} 
+                                            model: ${TEXT_EMBEDDING_MODEL}
+                                            inputConfig: {
+                                                    instancesFormat:"bigquery",
+                                                    bigquerySource:{  
+                                                            "inputUri" : "${bigquery_table}"
+                                                            }
+                                                        }
+                                            
+                                            outputConfig: {
+                                                    predictionsFormat:"bigquery",
+                                                    bigqueryDestination:{
+                                                        outputUri: "${bigquery_table}"
+
+                                                        }
+                                                    }
+
+                                    result: llm_response 
+
+                - log_batch_prediction_job:
+                    call: sys.log
+                    args:
+                        text: ${"Batch Prediction Job Is Created - " +llm_response.body.name}
+
+                # Step 8: Get the job status 
+                - get_job_status:    
+                    call: googleapis.aiplatform.v1.projects.locations.batchPredictionJobs.get
+                    args:
+                        name:  ${llm_response.body.name}
+                        region: ${LOCATION}     
+                    
+                    result: listResult
+                    
+                # Step 9: check the job status if succeeded or failed return
+                - checkIfDone: 
+                        switch:
+                              - condition: ${listResult.state=="JOB_STATE_SUCCEEDED"}
+                                steps:
+                                    - set_success_out_put:
+                                        assign:
+                                            - out_result:
+                                                output_table: "${listResult.outputInfo.bigqueryOutputTable}"
+                                                state: "JOB_STATE_SUCCEEDED"                                          
+                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}
+                                next: log_job_execution
+
+                              - condition: ${listResult.state=="JOB_STATE_FAILED"}
+                                steps:
+                                    - set_fail_out_put:
+                                        assign:
+                                            - out_result:
+                                                output_table: ""
+                                                state: "JOB_STATE_FAILED"                                           
+                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)} 
+                                next: log_job_execution
+
+                # Step 10: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
+                - wait:
+                        call: sys.sleep
+                        args:
+                            seconds: 120
+                        next: get_job_status
+
+                - log_job_execution:
+                        call: sys.log
+                        args:
+                           text: ${"Batch Prediction Is Finished - " + "Output bigquery "+ out_result.output_table+ " ," + "Job Execution Status "+ out_result.state}
+    
+    # Step 9: return the result
+    - return_result:
+        return: ${BATCH_OUTPUT}   
+

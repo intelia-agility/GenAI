@@ -1,0 +1,7 @@
+VAR_METADATA_COLUMNS:  "asset_id" # asset unique id
+VAR_PAGE_CONTENT_COLUMNS: "HeadLine, Content"  # asset HeadLine and Content column
+VAR_SOURCE_QUERY: "SELECT id as asset_id,test_metadata as HeadLine, content as Content   FROM `nine-quality-test.Nine_Quality_Test.test_long_artcles` ;"        
+VAR_CHUNK_SIZE: 1000
+VAR_CHUNK_OVERLAP:  100
+VAR_MAX_PROMPT_COUNT_LIMIT: 25000 #30000 #Maximum number of requests per batch; currently, the API has a limit of 30,000 prompts
+

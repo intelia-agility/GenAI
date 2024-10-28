@@ -57,7 +57,7 @@ def create_table(project_id,dataset_id,table_id):
         bigquery.SchemaField("request_id", "STRING", mode="REQUIRED"),
         #bigquery.SchemaField("original_content", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("content", "STRING", mode="REQUIRED"),
-        bigquery.SchemaField("asset_id", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("combined_id", "STRING", mode="REQUIRED"),
        # bigquery.SchemaField("media_type", "STRING", mode="NULLABLE"),
         #bigquery.SchemaField("path", "STRING", mode="NULLABLE"),
        # bigquery.SchemaField("test_metadata", "STRING", mode="NULLABLE"),
@@ -97,6 +97,46 @@ def create_table(project_id,dataset_id,table_id):
         print(f"Table '{full_table_id}' created successfully.")
         
     return schema
+
+
+def load_and_split_docs (source_query_str: str,project_id: str, metadata_columns: list[str], page_content_columns: list[str], chunk_size: int,chunk_overlap: int ):
+    
+    """
+        Load data from biquery table and chunk them 
+        
+        Args:
+           str source_query_str: source query string
+           str project_id: project id
+           list[str] metadata_columns: list of columns from the source table 
+           list[str] page_content_columns:  list of page content columns from the source table
+           int chunk_size: chunk size in character
+           int chunk_overlap: chunk overlap in character
+           
+        Returns:
+            list[documents] doc_splits: list of splitted documents
+             
+    """
+    
+      # Load the data
+    loader = BigQueryLoader(
+        query=source_query_str, project=project_id, metadata_columns=metadata_columns, page_content_columns=page_content_columns
+    )
+    
+    documents = []
+    documents.extend(loader.load())
+    
+    print(f"Data Loaded from source - {source_query_str}")
+
+
+    # Split the documents into chunks
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+       #separators=separators,
+    )
+    doc_splits = text_splitter.split_documents(documents)   
+    
+    return doc_splits
 
 def load_into_bq(table_prefix: str,project_id: str,dataset_id: str, region: str, data: list,  version: int):  
     """
@@ -147,61 +187,37 @@ def chunk_bq_content(request_args):
     """
     status=''   
 
-    # try:
+
     project_id=  request_args['project_id']
     dataset_id=  request_args['dataset']
     table= request_args['table']
     region= request_args['region']
     metadata_columns= [col.strip() for col in  str(request_args['metadata_columns']).split(',') ]
-    page_content_columns= [col.strip() for col in str(request_args['page_content_columns']).split(',') ]
-    source_query_str= request_args['source_query_str']
+    article_page_content_columns= [col.strip() for col in str(request_args['article_page_content_columns']).split(',') ]
+    video_page_content_columns= [col.strip() for col in str(request_args['video_page_content_columns']).split(',') ]
+    image_page_content_columns= [col.strip() for col in str(request_args['image_page_content_columns']).split(',') ]
+    article_source_query_str= request_args['article_source_query_str']
+    video_source_query_str= request_args['video_source_query_str']
+    image_source_query_str= request_args['image_source_query_str']            
     #separators= "\n" if str(request_args['separators'])=="" else str(request_args['separators']).split(',') 
     chunk_size= 1000 if str(request_args['chunk_size']) in ["None",""] else int(str(request_args['chunk_size']))  
     chunk_overlap=100 if str(request_args['chunk_overlap']) in ["None",""] else int(str(request_args['chunk_overlap'])) 
-    max_prompt_count_limit=30000 if str(request_args['max_prompt_count_limit']) in ["None",""] else int(str(request_args['max_prompt_count_limit'])) 
+    max_prompt_count_limit=20000 if str(request_args['max_prompt_count_limit']) in ["None",""] else int(str(request_args['max_prompt_count_limit'])) 
+  
 
-
-#     except:        
-#             project_id= 'nine-quality-test' 
-#             dataset_id= 'langchain_dataset'
-#             table= "chucked_content_data_2024_10_24T014648231552Z"
-#             region= 'us-central1'
-#             metadata_columns= ["asset_id"]
-#             page_content_columns= ["HeadLine","Content"]
-#             source_query_str= """
-#            SELECT asset_id, headline as HeadLine, plain_text_column as Content  FROM `nine-quality-test.vlt_media_content_prelanding.vlt_article_content` ;
-#             """
+    #load and split articles       
+    doc_splits= load_and_split_docs(article_source_query_str,project_id, metadata_columns, article_page_content_columns, chunk_size,chunk_overlap )       
+    print(f"Article contents loaded and splitted - chunk_size {chunk_size}, chunk_overlap {chunk_overlap}\n")
+ 
+    #load and split videos    
+    doc_splits= doc_splits+ load_and_split_docs(video_source_query_str,project_id, metadata_columns, video_page_content_columns, chunk_size,chunk_overlap )        
+    print(f"Video contents loaded and splitted - chunk_size {chunk_size}, chunk_overlap {chunk_overlap}\n")
    
-#             chunk_size= 1000
-#             chunk_overlap= 100
-#             max_prompt_count_limit=25000
-#             #return {'record_count':0, 'status':'ERROR- Set required input parameters'}
-             
-                
-            
-     # Load the data
-    loader = BigQueryLoader(
-        query=source_query_str, project=project_id, metadata_columns=metadata_columns, page_content_columns=page_content_columns
-    )
+    #load and split images 
+    doc_splits= doc_splits+ load_and_split_docs(image_source_query_str,project_id, metadata_columns, image_page_content_columns, chunk_size,chunk_overlap )        
+    print(f"Image contents loaded and splitted - chunk_size {chunk_size}, chunk_overlap {chunk_overlap}\n")
+
     
-    documents = []
-    documents.extend(loader.load())
-    
-    print(f"Data Loaded from source - {source_query_str}")
-
-
-    # Split the documents into chunks
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-       #separators=separators,
-    )
-    doc_splits = text_splitter.split_documents(documents)    
-     
-    print(f"Documents splitted - chunk_size {chunk_size}, chunk_overlap {chunk_overlap}")
-
-    # # get current processing time to add it to metadata, datetime object containing current date and time
-    # now = datetime.now()
     # Add chunk number to metadata
     chunk_idx=0
     prev=doc_splits[0].metadata[metadata_columns[0]]
@@ -217,6 +233,7 @@ def chunk_bq_content(request_args):
     prefix=f"{table}" 
     job_list=[]
     job_execution_result={}
+    #laod data into bigquery table
     for idx, split in enumerate(doc_splits):
             split.metadata["process_time"]=now
             if prev==split.metadata[metadata_columns[0]]:
@@ -233,11 +250,11 @@ def chunk_bq_content(request_args):
             if chunk_idx==1:                
                  content=split.page_content  
             else:                  
-                  content=page_content_columns[1]+": "+split.page_content 
+                  content="Content"+": "+split.page_content 
                 
             rows_to_insert.append(
                                {  "request_id":  request_id  , 
-                                   "asset_id": split.metadata[metadata_columns[0]], 
+                                   "combined_id": split.metadata[metadata_columns[0]], 
                                    "process_time":split.metadata["process_time"].isoformat(),
                                    "content": content,#.replace(page_content_columns[0]+":", "", 1).strip(),
                                    #"original_content": split.metadata["content"],
