@@ -11,17 +11,17 @@ main:
                                 table: ${input.table}
                                 region: ${input.region} 
                                 metadata_columns:  ${input.metadata_columns}  
-                                page_content_columns_images:  ${input.page_content_columns_images}
-                                page_content_columns_videos:  ${input.page_content_columns_videos}
-                                page_content_columns_articles:  ${input.page_content_columns_articles}
-                                source_query_str_images: ${input.source_query_str_images}
-                                source_query_str_videos: ${input.source_query_str_videos}
-                                source_query_str_articles: ${input.source_query_str_articles}
+                                image_page_content_columns:  ${input.page_content_columns_images}
+                                video_page_content_columns:  ${input.page_content_columns_videos}
+                                article_page_content_columns:  ${input.page_content_columns_articles}
+                                image_source_query_str: ${input.source_query_str_images}
+                                video_source_query_str: ${input.source_query_str_videos}
+                                article_source_query_str: ${input.source_query_str_articles}
                                 chunk_size: ${string(input.chunk_size)}
                                 chunk_overlap: ${string(input.chunk_overlap)}
                                 max_prompt_count_limit: ${string(input.max_prompt_count_limit)}
                                 
-                             
+                               
                     - projectId:  ${input.project_id}
                     - region:  ${input.region}
                     - imageUri: ${region + "-docker.pkg.dev/" + projectId + "/vlt-chunk-bq-content-docker/chunk-bq-content:v1.00"}
@@ -46,8 +46,8 @@ main:
                         variables:
                                ${input_vars }
                   computeResource: {
-                        "cpuMilli": 1000, # 8cpu
-                        "memoryMib": 512  #32 GB of memory 
+                        "cpuMilli": 4000, # 4cpu
+                        "memoryMib": 16384  #16 GB of memory 
                         }
                  
 
