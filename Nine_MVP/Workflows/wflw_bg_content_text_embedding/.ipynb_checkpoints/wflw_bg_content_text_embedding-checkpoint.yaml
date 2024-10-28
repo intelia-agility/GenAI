@@ -99,7 +99,7 @@ main:
     - loop_over_request_tables:
         for:
            value: version
-           range: [0,1] #${[0, count_of_tables-1]}
+           range: ${[0, count_of_tables-1]}
            steps:
                  #Step 6: Set the big query table 
                  
