@@ -89,6 +89,7 @@ main:
           projectId: ${PROJECT}
           body:
             query: ${" CREATE SCHEMA IF NOT EXISTS " +METADATA_DATASET }
+            location: ${LOCATION}
             useLegacySql: false       
 
     
