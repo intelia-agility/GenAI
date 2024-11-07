@@ -46,6 +46,7 @@ main:
           projectId: ${PROJECT}
           body:
             query: ${" CREATE SCHEMA IF NOT EXISTS " +LANDING_DATASET }
+            location: ${LOCATION}
             useLegacySql: false
 
 
