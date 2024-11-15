@@ -1,0 +1,8 @@
+{
+   "dataset": "vlt_media_embeddings_integration",
+   "content_table": "vlt_all_media_content_text_embeddings",
+   "mm_table":"vlt_imgvdo_multimodal_embeddings",
+   "content_source_embedding_column":"text_embedding_result",
+   "mm_source_embedding_column":"ml_generate_embedding_result",
+    "top_k":50
+}
