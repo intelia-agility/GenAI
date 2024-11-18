@@ -17,6 +17,8 @@ main:
             - METADATA_DATASET: "vlt_media_metadata_prelanding"
             - METADATA_TABLE: "vlt_video_metadata_bq" 
             - LANDING_DATASET:  "vlt_media_multimodal_embeddings_prelanding"
+            - INTEGRATION_DATASET:  "vlt_media_embeddings_integration"
+            - INTEGRATION_TABLE: "vlt_imgvdo_multimodal_embeddings"
             - VIDEO_MULTIMODAL_EMBEDDING_TABLE: "vlt_video_multimodal_embeddings_bq" 
             - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
             - VIDEO_METADATA_TABLE: "vlt_video_duration_metadata" 
@@ -27,6 +29,8 @@ main:
             - SEGMENT_LENGTH: ${int(sys.get_env("VAR_SEGMENT_LENGTH"))} 
             - INTERVALS :  ${int(sys.get_env("VAR_INTERVALS"))}  
             - MEDIA_TYPES:  ${sys.get_env("VAR_MEDIA_TYPES")}  
+            - IGNORE_PROCESSED_MEDIA_FLAG: ${int(sys.get_env("VAR_IGNORE_PROCESSED_MEDIA_FLAG"))} 
+            - filter_clause: "" 
 
 
     # Step 1: Create metadata dataset
@@ -46,7 +50,6 @@ main:
           projectId: ${PROJECT}
           body:
             query: ${" CREATE SCHEMA IF NOT EXISTS " +LANDING_DATASET }
-            location: ${LOCATION}
             useLegacySql: false
 
 
@@ -166,6 +169,17 @@ main:
             - endSegment:  ${prev+SEGMENT_LENGTH}
             - offset: 0
 
+    
+    #Step 12-1: Check if it is require to just process medias which have not been processed before
+    # just consider start offeset because endoffset is set according to intervals
+    - check_ignore_processed_media_flag:
+        switch:
+          - condition: ${int(IGNORE_PROCESSED_MEDIA_FLAG)==1}
+            steps:
+              - set_filter_clouse:
+                  assign: 
+                       - filter_clause: ${" AND uri NOT IN (SELECT uri FROM `"+PROJECT +"."+INTEGRATION_DATASET+"."+INTEGRATION_TABLE+"` WHERE ml_generate_embedding_start_sec="+ string(startSegment)+")"}
+   
      #Step 13: Get media count for next segment
     - get_next_segment:
             call:  googleapis.bigquery.v2.jobs.query
@@ -176,7 +190,7 @@ main:
                                             METADATA_DATASET+"."+METADATA_TABLE+"` EVM
                                             INNER JOIN `"+METADATA_DATASET+"."+VIDEO_METADATA_TABLE+"` VM
                                             ON EVM.uri=VM.gcs_uri
-                                            WHERE VM.duration>=" + string(startSegment) +                                                    
+                                            WHERE VM.duration>" + string(startSegment) +  filter_clause+                                                   
                                             " LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"}'
                     useLegacySql: false
             result: response
@@ -195,8 +209,8 @@ main:
                            #can not use inner join because it gives error that should directly read from object table 
                             - table_query:  ${"  (SELECT EVM.*  FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` AS  EVM "+
                                         " WHERE uri IN ( SELECT gcs_uri FROM `"+METADATA_DATASET+"."+VIDEO_METADATA_TABLE+"` AS  VM "+
-                                        " WHERE VM.duration>=" + string(startSegment) +
-                                        " ) LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"
+                                        " WHERE VM.duration>" + string(startSegment) +
+                                        " ) "+ filter_clause+ " LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"
                                         }
                             - struct_query: ${" STRUCT(TRUE AS flatten_json_output,"+
                                                          string(startSegment)+ "  AS start_second,"+
@@ -266,7 +280,7 @@ main:
                                         METADATA_DATASET+"."+METADATA_TABLE+"` EVM
                                         INNER JOIN `"+METADATA_DATASET+"."+VIDEO_METADATA_TABLE+"` VM
                                         ON EVM.uri=VM.gcs_uri
-                                        WHERE VM.duration>=" + string(startSegment) +                                                    
+                                        WHERE VM.duration>" + string(startSegment) +  filter_clause+                                                    
                                         " LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"}'
                                 useLegacySql: false
                         result: response

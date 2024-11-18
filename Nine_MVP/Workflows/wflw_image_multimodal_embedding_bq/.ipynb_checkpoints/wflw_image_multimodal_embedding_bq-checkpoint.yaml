@@ -18,13 +18,17 @@ main:
             - METADATA_DATASET: "vlt_media_metadata_prelanding"
             - METADATA_TABLE: "vlt_image_metadata_bq" 
             - LANDING_DATASET:  "vlt_media_multimodal_embeddings_prelanding"
+            - INTEGRATION_DATASET:  "vlt_media_embeddings_integration"
+            - INTEGRATION_TABLE: "vlt_imgvdo_multimodal_embeddings"
             - IMAGE_MULTIMODAL_EMBEDDING_TABLE: "vlt_image_multimodal_embeddings_bq" 
             - OUTPUT_TABLE: ${METADATA_DATASET+"."+METADATA_TABLE}
 
             - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}            
             - SOURCE_IMAGE_FOLDER: ${sys.get_env("VAR_SOURCE_IMAGE_FOLDER")} 
-            - BATCH_SIZE: ${sys.get_env("VAR_BATCH_SIZE")} 
+            - BATCH_SIZE: ${int(sys.get_env("VAR_BATCH_SIZE"))} 
             - MEDIA_TYPES:  ${sys.get_env("VAR_MEDIA_TYPES")} 
+            - IGNORE_PROCESSED_MEDIA_FLAG: ${int(sys.get_env("VAR_IGNORE_PROCESSED_MEDIA_FLAG"))} 
+            - filter_clause: "" 
           
           
     # Step 1: Create metadata dataset
@@ -66,6 +70,8 @@ main:
         call: googleapis.bigquery.v2.jobs.insert
         args:
           projectId:  ${PROJECT}
+          connector_params:
+            timeout: 31536000 
           body:
             configuration:
               query:
@@ -106,6 +112,17 @@ main:
         call: sys.log
         args:
           text: ${"Media Metadata Object Table Loaded - " }
+
+    #Step 6-1: Check if it is require to just process medias which have not been processed before
+    - check_ignore_processed_media_flag:
+        switch:
+          - condition: ${int(IGNORE_PROCESSED_MEDIA_FLAG)==1}
+            steps:
+              - set_filter_clouse:
+                  assign: 
+                       - filter_clause: ${" WHERE uri NOT IN (SELECT uri FROM `"+PROJECT +"."+INTEGRATION_DATASET+"."+INTEGRATION_TABLE+"`)"}
+
+
           
     #Step 7: Get media count
     - get_media_count:
@@ -113,7 +130,7 @@ main:
         args:
           projectId: ${PROJECT}
           body:
-            query: ${"SELECT COUNT(*) AS media_count FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` LIMIT 1"}
+            query: ${"SELECT COUNT(*) AS media_count FROM `"+METADATA_DATASET+"."+METADATA_TABLE+ "`" + filter_clause +" LIMIT 1"}
             useLegacySql: false
         result: media_count_response
 
@@ -136,6 +153,9 @@ main:
                     - exitNoMedia:
                         return: "No Media Found- Check The Media Folder"   
 
+    
+  
+
     #Step 10: Inititalize variables for the batch
     - initialize:
         assign:         
@@ -156,7 +176,7 @@ main:
                         configuration:
                             query:
                                 query:  ${query+ " SELECT *  FROM  ML.GENERATE_EMBEDDING ( MODEL" +"`"+ METADATA_DATASET+"."+MODEL_NAME+"`,"+
-                                            " ( SELECT *  FROM `"+METADATA_DATASET+"."+METADATA_TABLE+"` LIMIT " +string(limit) +" OFFSET "+ string(offset) +"))"}
+                                            " ( SELECT *  FROM `"+METADATA_DATASET+"."+METADATA_TABLE+ "`" + filter_clause +" LIMIT " +string(limit) +" OFFSET "+ string(offset) +"))"}
                                 useLegacySql: false              
                 result: queryJob 
 
@@ -204,7 +224,7 @@ main:
                     projectId: ${PROJECT}
                     body:
                         query: ${" SELECT COUNT(*) media_count FROM (SELECT 1 FROM `"+
-                                 METADATA_DATASET+"."+METADATA_TABLE+"` LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"}
+                                 METADATA_DATASET+"."+METADATA_TABLE+ "`" + filter_clause +" LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"}
                         useLegacySql: false
                 result: media_count_response
 
