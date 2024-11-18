@@ -9,6 +9,7 @@ import os
 import gcsfs
 from pymediainfo import MediaInfo
 from pydantic import BaseModel
+import pandas as pd
 
 def upload_file(request_file : tempfile,dest_bucket_name:str =None,request_file_folder: str =None,request_file_prefix: str =None, version: int=0, request_file_post_fix : str=""):
 
@@ -53,17 +54,19 @@ def get_video_duration(gcsuri: str):
 
     return duration
 
-def get_successfull_processed_media(project_id,media):
+def get_successfull_processed_media(project_id,location,media):
     """Get the list of images that are successfully processed."""
 
     sql = f"""  
          SELECT fileUri, startOffset_seconds,endOffset_seconds 
-         FROM `vlt_media_content_prelanding.vlt_{media}_content`
+         FROM `{project_id}.vlt_media_content_prelanding.vlt_{media}_content`
           WHERE (finishReason ='STOP' or  trim(status) ='')
-          AND load_date_time=(SELECT MAX(load_date_time) FROM `vlt_media_content_prelanding.vlt_{media}_content` )
+          --AND load_date_time=(SELECT MAX(load_date_time) FROM `{project_id}.vlt_media_content_prelanding.vlt_{media}_content` )
     """       
     
-    bq_client = bigquery.Client(project_id)
+    #print(sql)
+    
+    bq_client = bigquery.Client(project=project_id, location=location)
   
     # Run the query
     query_job = bq_client.query(sql)
@@ -81,7 +84,7 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
                           request_file_prefix: str= None, request_file_folder: str= None, mime_types: list[str]= None,
                           prompt_text: str="", temperature: float= None,
                           max_output_tokens: int=2048, top_p: float= None, top_k : float= None, max_request_per_file: int =None, 
-                          video_metadata_table: str="", intervals: int =120, project_id: str=""):
+                          video_metadata_table: str="", intervals: int =120, project_id: str="",ignore_processed_media_flag: int=None, location: str=""):
 
     """create batch request  file(s) of up to 30000 for video and store it in gcs
    
@@ -126,8 +129,12 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
     segments_to_process=int(intervals) #segments duration  
     video_start =0 #where from video to start
     rf=None
-    processed_videos=get_successfull_processed_media(project_id,"video")[["fileUri","startOffset_seconds","endOffset_seconds"]]
-         
+    if ignore_processed_media_flag==1:
+        processed_videos=get_successfull_processed_media(project_id,location,"video")[["fileUri","startOffset_seconds","endOffset_seconds"]]
+    else:
+        processed_videos = pd.DataFrame(columns=["fileUri", "startOffset_seconds", "endOffset_seconds"])
+
+    
     for blob in blobs:                         
         if blob.content_type in mime_types:                            
                          gcsuri= "gs://"+source_bucket_name+"/"+blob.name
@@ -140,7 +147,7 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
                                 startOffset=offset['start']
                                 endOffset=offset['end']
                                 
-                                if len(processed_videos[(results['fileUri'] ==gcsuri ) & (processed_videos['startOffset_seconds']==0) &(processed_videos['endOffset_seconds']==600)])>0 :
+                                if len(processed_videos[(processed_videos['fileUri'] ==gcsuri ) & (processed_videos['startOffset_seconds']==startOffset) &(processed_videos['endOffset_seconds']==endOffset)])>0 :
                                     #the segment already has been successfully processed
                                     continue
                                     
@@ -238,7 +245,7 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
 def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: str= None, source_folder_name: str=None,
                           request_file_prefix: str= None, request_file_folder: str= None, mime_types: list[str]= None,
                           prompt_text: str="", temperature: float= None,
-                          max_output_tokens: int=2048, top_p: float= None, top_k : float= None, max_request_per_file: int =None,project_id: str=""):
+                          max_output_tokens: int=2048, top_p: float= None, top_k : float= None, max_request_per_file: int =None,project_id: str="",ignore_processed_media_flag: int=None, location: str=""):
 
     """create batch request  file(s) of up to 30000 for videos and store it in gcs
    
@@ -278,8 +285,12 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
     now=datetime.strftime(now, '%Y%m%d%H%M%S')
     versions=[]
     rf=None
-
-    processed_images=get_successfull_processed_media(project_id,"image")[["fileUri"]]
+    
+    if ignore_processed_media_flag==1:
+        processed_images=get_successfull_processed_media(project_id,location,"image")[["fileUri"]]
+    else:
+        processed_images = pd.DataFrame(columns=["fileUri"])
+        
     for blob in blobs:                         
                     if blob.content_type in mime_types and (not "gs://"+source_bucket_name+"/"+blob.name in processed_images['fileUri'].values):                            
                          gcsuri= "gs://"+source_bucket_name+"/"+blob.name
@@ -363,7 +374,7 @@ if __name__ == "__main__":
         if  'destination_bucket' in os.environ:
             dest_bucket_name= os.environ.get('destination_bucket')
         else:
-          destination_bucket=""
+          dest_bucket_name=""
         
         if  'source_bucket' in os.environ:
             source_bucket_name= os.environ.get('source_bucket')
@@ -434,10 +445,21 @@ if __name__ == "__main__":
         else:
           max_request_per_file=30000
         
-        if   'project_id' in os.environ:
-            project_id= os.environ.get('project_id') 
+        if   'project' in os.environ:
+            project_id= os.environ.get('project') 
         else:
             project_id=""
+            
+        if   'region' in os.environ:
+            location= os.environ.get('region') 
+        else:
+            location=""                        
+            
+        if   'ignore_processed_media_flag' in os.environ:
+            ignore_processed_media_flag= int(os.environ.get('ignore_processed_media_flag'))
+        else:
+            ignore_processed_media_flag=1
+   
 
         versions=0
         if  request_content=='image':
@@ -445,7 +467,7 @@ if __name__ == "__main__":
                                           request_file_prefix=request_file_prefix,request_file_folder=request_file_folder,
                                           mime_types=media_types, prompt_text=prompt_text,temperature=temperature,
                                           max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file,
-                                          project_id=project_id
+                                          project_id=project_id,ignore_processed_media_flag=ignore_processed_media_flag, location=location
                                           )  
         if  request_content=='video':
              versions=create_video_request_file(dest_bucket_name=dest_bucket_name,source_bucket_name=source_bucket_name,source_folder_name=source_folder_name,
@@ -453,7 +475,7 @@ if __name__ == "__main__":
                                           mime_types=media_types, prompt_text=prompt_text,temperature=temperature,
                                           max_output_tokens=max_output_tokens,top_p=top_p,top_k=top_k, max_request_per_file=max_request_per_file,
                                           video_metadata_table=video_metadata_table, intervals=intervals,
-                                           project_id=project_id
+                                           project_id=project_id,ignore_processed_media_flag=ignore_processed_media_flag, location=location
                                           ) 
         
         # if  request_content=='video_duration':
