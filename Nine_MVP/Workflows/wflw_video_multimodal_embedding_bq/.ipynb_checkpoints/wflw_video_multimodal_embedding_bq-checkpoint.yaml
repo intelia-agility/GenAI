@@ -194,12 +194,15 @@ main:
                                             " LIMIT " +string(limit) +" OFFSET "+ string(offset) +")"}'
                     useLegacySql: false
             result: response
+            
 
     #Step 14: check if there are more segments to process   
     - check_if_more_segments:
             switch:
-                - condition: ${int(response.rows[0].f[0]["v"])==0}
+                - condition: ${int(response.rows[0].f[0]["v"])==0 and offset!=0}
                   next: return_result 
+                - condition: ${int(response.rows[0].f[0]["v"])==0 and offset==0}
+                  return: "No Media Found- Check The Media Folder"    
 
     #Step 15: Fetch the rows in batches and calculate multimodal embeddings
     - fetchRows:
