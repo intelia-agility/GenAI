@@ -76,8 +76,12 @@ def get_successfull_processed_media(project_id,location,media):
     output=[]
     for row in results:
             output.append({'fileUri':row['fileUri'],'startOffset_seconds':row['startOffset_seconds'],'endOffset_seconds':row['endOffset_seconds']})
- 
-    df = pd.DataFrame.from_records(output)
+    
+    if len(output)>0:
+            df = pd.DataFrame.from_records(output)
+    else:
+        df=pd.DataFrame(columns=["fileUri", "startOffset_seconds", "endOffset_seconds"])
+        
     return df
 
 def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: str= None, source_folder_name: str=None,
