@@ -10,7 +10,7 @@ from google.protobuf import struct_pb2
 
 
 
-text_embedding_model = TextEmbeddingModel.from_pretrained("textembedding-gecko")
+text_embedding_model = TextEmbeddingModel.from_pretrained("textembedding-gecko@003")
 multimodal_embedding_model="/publishers/google/models/multimodalembedding@001"
  
 
@@ -38,14 +38,16 @@ class EmbeddingPredictionClient:
         self.location = location
         self.project = project
 
-    def get_multimodal_embedding(self, text: str = None, image_file: str = None):
+    def get_multimodal_embedding(self, text: str = None, image_file: bytes = None):
+      
         if not text and not image_file:
             raise ValueError("At least one of text or image_file must be specified.")
 
         # Load image file ######## to Do:
         image_bytes = None
         if image_file:
-            image_bytes = load_image_bytes(image_file)
+            image_bytes = image_file#load_image_bytes(image_file)
+            
 
         instance = struct_pb2.Struct()
         if text:
