@@ -58,9 +58,10 @@ def get_successfull_processed_media(project_id,location,media):
     """Get the list of images that are successfully processed."""
 
     sql = f"""  
-         SELECT fileUri, startOffset_seconds,endOffset_seconds 
-         FROM `{project_id}.vlt_media_content_prelanding.vlt_{media}_content`
+         SELECT fileUri, startOffset_seconds,endOffset_seconds, prompt_text
+         FROM `{project_id}.vlt_media_content_prelanding.vlt_combined_media_content`
           WHERE (finishReason ='STOP' or  trim(status) ='')
+          AND LOWER(ASSET_TYPE) LIKE'%{media}%'
           --AND load_date_time=(SELECT MAX(load_date_time) FROM `{project_id}.vlt_media_content_prelanding.vlt_{media}_content` )
     """       
     
@@ -75,12 +76,12 @@ def get_successfull_processed_media(project_id,location,media):
     results = query_job.result()
     output=[]
     for row in results:
-            output.append({'fileUri':row['fileUri'],'startOffset_seconds':row['startOffset_seconds'],'endOffset_seconds':row['endOffset_seconds']})
-    
+            output.append({'fileUri':row['fileUri'],'startOffset_seconds':row['startOffset_seconds'],'endOffset_seconds':row['endOffset_seconds'], 'prompt':row['prompt_text']})
+ 
     if len(output)>0:
             df = pd.DataFrame.from_records(output)
     else:
-        df=pd.DataFrame(columns=["fileUri", "startOffset_seconds", "endOffset_seconds"])
+        df=pd.DataFrame(columns=["fileUri", "startOffset_seconds", "endOffset_seconds","prompt"])
         
     return df
 
@@ -134,9 +135,9 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
     video_start =0 #where from video to start
     rf=None
     if ignore_processed_media_flag==1:
-        processed_videos=get_successfull_processed_media(project_id,location,"video")[["fileUri","startOffset_seconds","endOffset_seconds"]]
+        processed_videos=get_successfull_processed_media(project_id,location,"video")[["fileUri","startOffset_seconds","endOffset_seconds","prompt"]]
     else:
-        processed_videos = pd.DataFrame(columns=["fileUri", "startOffset_seconds", "endOffset_seconds"])
+        processed_videos = pd.DataFrame(columns=["fileUri", "startOffset_seconds", "endOffset_seconds","prompt"])
 
     
     for blob in blobs:                         
@@ -151,15 +152,14 @@ def create_video_request_file( dest_bucket_name: str= None, source_bucket_name: 
                                 startOffset=offset['start']
                                 endOffset=offset['end']
                                 
-                                if len(processed_videos[(processed_videos['fileUri'] ==gcsuri ) & (processed_videos['startOffset_seconds']==startOffset) &(processed_videos['endOffset_seconds']==endOffset)])>0 :
-                                    #the segment already has been successfully processed
-                                    continue
-                                    
                                 if endOffset>=video_duration:
                                      endOffset=video_duration
                                  
                                 prev=val 
                                 segment_prompt= "Your objective is to generate a very detailed description of this video from period " + str(startOffset)+" seconds to "+ str(endOffset)+" seconds." 
+                                if len(processed_videos[(processed_videos['fileUri'] ==gcsuri ) & (processed_videos['startOffset_seconds']==startOffset) &(processed_videos['endOffset_seconds']==endOffset) &(processed_videos['prompt'] ==(segment_prompt +"\n"+ prompt_text))])>0 :
+                                    #the segment with the same prompt already has been successfully processed
+                                    continue
                                 if index==0:
                                     request_file = tempfile.NamedTemporaryFile(suffix=".json", delete=True) 
                                     rf= open(request_file.name, "a") 
@@ -291,13 +291,16 @@ def create_image_request_file( dest_bucket_name: str= None, source_bucket_name: 
     rf=None
     
     if ignore_processed_media_flag==1:
-        processed_images=get_successfull_processed_media(project_id,location,"image")[["fileUri"]]
+        processed_images=get_successfull_processed_media(project_id,location,"image")[["fileUri","prompt"]]
     else:
-        processed_images = pd.DataFrame(columns=["fileUri"])
+        processed_images = pd.DataFrame(columns=["fileUri","prompt"])
         
     for blob in blobs:                         
-                    if blob.content_type in mime_types and (not "gs://"+source_bucket_name+"/"+blob.name in processed_images['fileUri'].values):                            
+                    if blob.content_type in mime_types :                                              
                          gcsuri= "gs://"+source_bucket_name+"/"+blob.name
+                         if len(processed_images[(processed_images['fileUri'] ==gcsuri ) & (processed_images['prompt'] ==prompt_text)])>0 :
+                                    #image with the same prompt already has been successfully processed
+                                    continue
                          mimeType=blob.content_type
                          if index==0:
                             request_file = tempfile.NamedTemporaryFile(suffix=".json", delete=True) 

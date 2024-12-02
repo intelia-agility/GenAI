@@ -230,7 +230,8 @@ def get_media_metadata(request):
             idx=idx+1
 
     #create table new if does not exist
-    table=f"{table}" 
+    table=f"vlt_search_contentgen_logs" 
+    dataset_id="vlt_search_content_webapp_stats"
     table_schema=create_table(project_id,dataset_id,table)
     #_=create_error_table(project_id,dataset_id,error_table)
     #push the data into the table

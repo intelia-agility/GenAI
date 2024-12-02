@@ -4,5 +4,9 @@
    "mm_table":"vlt_imgvdo_multimodal_embeddings",
    "content_source_embedding_column":"text_embedding_result",
    "mm_source_embedding_column":"ml_generate_embedding_result",
-    "top_k":50
+    "top_k":50,
+"context_window_limit": 2000000,
+   "model_name": "gemini-1.5-pro-002" ,
+    "log_dataset": "vlt_log_statistics_schema",
+    "log_table":"vlt_search_contentgen_logs"
 }
