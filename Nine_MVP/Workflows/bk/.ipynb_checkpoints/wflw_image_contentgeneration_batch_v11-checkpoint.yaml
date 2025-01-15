@@ -1,0 +1,223 @@
+# This is the main workflow to generate image contents in batch
+#
+
+main:
+  steps:
+    # Step 1: initialize varibales
+    - init:
+        assign:
+            - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+            - SOURCE_BUCKET:  ${sys.get_env("VAR_SOURCE_BUCKET")} 
+            - DESTINATION_BUCKET:  ${sys.get_env("VAR_DESTINATION_BUCKET")} 
+            - SOURCE_IMAGE_FOLDER: "IMAGES"
+            
+            - CONTENT_METHOD: "batchPredictionJobs" 
+            - CONTENT_LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+CONTENT_METHOD}
+            - MODEL: "publishers/google/models/gemini-1.5-pro-002"   # "publishers/google/models/gemini-1.5-flash-002"
+            - MEDIA_TYPES: "image/jpeg,image/png"
+
+            - FUNC_CREATE_GCS_BATCH_REQUEST: ${"https://"+LOCATION+"-"+PROJECT+".cloudfunctions.net/func_generate_batchrequest_file"}
+            
+            - REQUEST_FILE_PREFIX: "image_request"
+            - REQUEST_FOLDER: "image_batch_request_fldr"
+            - PROCESSED_REQUEST_FOLDER: "processed_image_batch_request_fldr"
+            - ERROR_PROCESSED_REQUEST_FOLDER: "error_image_batch_request_fldr"
+            - BATCH_PREDICTION_FOLDER: "image_batch_prediction_fldr_out"
+            - BATCH_OUTPUT: []
+                 
+            # - IMAGE_PROMPT_TEXT: "You are an assistant tasked with describing images for retrieval. \
+            #                     These descriptions will be embedded and used to retrieve the raw image. \
+            #                     Give a concise description of the image that is well optimized for retrieval.\
+            #                     If there is a text in the image mention that. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\
+            #                     If you are not sure about any info, please do not make it up. Do not add any extra text to the output."
+
+            - IMAGE_PROMPT_TEXT: "You are an assistant tasked with describing images for retrieval. \
+                                Describe this image well optimized for retrieval. If there is a text in the image mention that. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\
+                                Give me at least 1500 words describing it. If you are not sure about any info, please do not make it up. Do not add any extra text to the output"
+
+            - TEMPERATURE: 0.5
+            - MAX_OUT_TOKENS: 2048 # can go up to 8192
+            - TOP_P: 0.8
+            - TOP_K: 40
+            - REQUEST_CONTENT: 'image'
+            - MAX_REQUEST_PER_FILE: 25000 # up to 30000 max
+
+                                    
+    
+    # Step 2: If no request file exists, create new request file(s)
+    - genearte_batch_request_file:
+        call: http.post
+        args:
+            url:  ${FUNC_CREATE_GCS_BATCH_REQUEST}
+            query:
+                name: "GENERATE BATCH REQUEST FILE FOR IMAGE"            
+                destination_bucket: ${DESTINATION_BUCKET}
+                source_bucket: ${SOURCE_BUCKET}
+                source_folder: ${SOURCE_IMAGE_FOLDER}
+                request_file_prefix: ${REQUEST_FILE_PREFIX} 
+                request_file_folder:  ${REQUEST_FOLDER}              
+                prompt_text:  ${IMAGE_PROMPT_TEXT}
+                max_output_tokens: ${MAX_OUT_TOKENS}
+                temperature: ${TEMPERATURE}
+                top_p: ${TOP_P}
+                top_k: ${TOP_K}
+                request_content: ${REQUEST_CONTENT}
+                media_types: ${MEDIA_TYPES}
+                max_request_per_file: ${MAX_REQUEST_PER_FILE}
+        result:  request_file_res
+
+    
+    #Step 3: Check if any file is created
+    - if_requestfile_generated:
+            switch:
+                - condition: ${ request_file_res.body.file_count>=1}
+                  steps:
+                        - is_generated:   
+                            next: log_batch_request
+                - condition: ${request_file_res.body.file_count==0}
+                  steps:
+                        - not_generated:   
+                            return: "No request file is generated-Check the source image folder"
+
+
+    - log_batch_request:
+        call: sys.log
+        args:
+          text: ${"Batch Request File Is Created - " + "gs://"+DESTINATION_BUCKET+"/"+REQUEST_FOLDER}
+   
+    # Step 4: Get the list of newly generated request file(s)
+    - get_new_request_files:
+        call: googleapis.storage.v1.objects.list
+        args:
+            bucket: ${DESTINATION_BUCKET}
+            prefix: ${REQUEST_FOLDER}
+        result: list_result
+   
+    
+   
+   # Step 5: loop over request files and genearte batch request for them
+   # each file can only be 30,000 request
+    - loop_over_request_files:
+        for: 
+            value: item
+            in: ${list_result.items}
+            steps:
+                                
+                    # Step 7: Extract image contents by sending a batch prediction job                             
+                    - create_batch_request_job:        
+                                steps:
+                                    - ask_llm:
+                                        call: http.post
+                                        args:
+                                            url: ${CONTENT_LLM_API_ENDPOINT}
+                                            auth:
+                                                type: OAuth2
+                                            body:
+                                            
+                                                displayName: ${"BP_JOB_IMAGE_CONTENT_GENERATOR_"+text.replace_all(item.name, ".json","") }
+                                                model: ${MODEL}
+                
+                                                inputConfig: 
+                                                         instancesFormat: "jsonl"
+                                                         gcsSource: 
+                                                                uris : ${"gs://"+DESTINATION_BUCKET+"/"+item.name}       
+                                                outputConfig:  
+                                                        predictionsFormat: "jsonl"
+                                                        gcsDestination:
+                                                            outputUriPrefix: ${"gs://"+DESTINATION_BUCKET+"/"+BATCH_PREDICTION_FOLDER}                                                    
+                                                        
+                                        result: llm_response 
+
+                    - log_batch_prediction_job:
+                        call: sys.log
+                        args:
+                           text: ${"Batch Prediction Job Is Created - " +llm_response.body.name}
+
+                    # Step 8: Get the job status 
+                    - get_job_status:    
+                        call: googleapis.aiplatform.v1.projects.locations.batchPredictionJobs.get
+                        args:
+                            name:  ${llm_response.body.name}
+                            region: ${LOCATION}     
+                    
+                        result: listResult
+                    
+                    # Step 9: check the job status if succeeded or failed return
+                    #Move the request file to processed if successfully executed
+                    - checkIfDone: 
+                        switch:
+                              - condition: ${listResult.state=="JOB_STATE_SUCCEEDED"}
+                                steps:
+                                    - set_success_out_put:
+                                        assign:
+                                            - out_result:
+                                                output_dir: "${listResult.outputInfo.gcsOutputDirectory}"
+                                                state: "JOB_STATE_SUCCEEDED" 
+                                                request_file:  ${"gs://"+DESTINATION_BUCKET+"/"+item.name}      
+                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}                                   
+
+                                    - move_request_file_to_processed:
+                                        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+                                        args:
+                                            workflow_id: "wflw_cleanup_processed_objects"
+                                            location: ${LOCATION}
+                                            project_id: ${PROJECT}
+                                            argument: {
+                                                source_bucket:  "${DESTINATION_BUCKET}",
+                                                destination_bucket: "${DESTINATION_BUCKET}",
+                                                source_object: "${item.name}",
+                                                destination_object:  "${text.replace_all(item.name, REQUEST_FOLDER,PROCESSED_REQUEST_FOLDER)}"
+                                                      }
+                                        #result: runResult
+                                next: log_job_execution
+
+                              - condition: ${listResult.state=="JOB_STATE_FAILED"}
+                                steps:
+                                    - set_fail_out_put:
+                                        assign:
+                                            - out_result:
+                                                output_dir: ""
+                                                state: "JOB_STATE_FAILED"
+                                                request_file:  ${"gs://"+DESTINATION_BUCKET+"/"+item.name}      
+                                            - BATCH_OUTPUT: ${list.concat(BATCH_OUTPUT,out_result)}
+
+                                    - move_request_file_to_processed_error:
+                                        call: googleapis.workflowexecutions.v1beta.projects.locations.workflows.executions.run
+                                        args:
+                                            workflow_id: "wflw_cleanup_processed_objects"
+                                            location: ${LOCATION}
+                                            project_id: ${PROJECT}
+                                            argument: {
+                                                source_bucket:  "${DESTINATION_BUCKET}",
+                                                destination_bucket: "${DESTINATION_BUCKET}",
+                                                source_object: "${item.name}",
+                                                destination_object:  "${text.replace_all(item.name, REQUEST_FOLDER,ERROR_PROCESSED_REQUEST_FOLDER)}"
+                                                      }
+                                        #result: runResult
+
+                                next: log_job_execution
+
+                    # Step 10: if job status is not  succeeded or failed, sleep for 120 seconds and check it again
+                    - wait:
+                            call: sys.sleep
+                            args:
+                                seconds: 120
+                            next: get_job_status
+
+                    - log_job_execution:
+                        call: sys.log
+                        args:
+                           text: ${"Batch Prediction Is Finished - " + "Output Bucket Directory "+ out_result.output_dir+ " ," + "Job Execution Status "+ out_result.state + ", "+ "Processed Request File "+ out_result.request_file }
+                    
+                    # Step 11: Move the processed request file
+                       
+  
+    # Step 13: return the result
+    - return_result:
+        return: ${BATCH_OUTPUT}
+
+ 
+
+
+ 
