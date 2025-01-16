@@ -1,0 +1,135 @@
+,instruction,context,response,reference,custom_coverage/score,custom_coverage/explanation
+0,"Your task is to provide a comprehensive description of this video from segment 600 seconds to 900 seconds.
+To complete the task you need to follow these steps:
+
+                           No greetings, closing remarks, or additional comments. Begin immediately with the video analysis and provide only the requested information in the specified format.
+
+                           Idenify all instances of visual product placement. Pay close attention to background details and items held by the characters. List each product placement with the following
+                            information: Brand name, product name (if applicable), and a brief description. Include information about product placement into the description generated for the video
+
+                           Create a transcript of all the speeches, dialogs, narration.
+
+                           Scrupulously examine each scene for any and all visible brand names, logos, and products. Even if a product appears briefly or in the background, it should be included.
+Describe the video content objectively, avoiding any subjective opinions or assumptions.
+
+                           Specify who is saying what. If a person talking can be seen, specify their name and/or occupation. If it is voice behind the scenes, then describe it as a narrator.
+
+                           Be specific when describing. Include all the information that is shown or given.
+
+                           Do not show timestamps.
+
+                           If an unidentified person is shown in the video first, but then their name is mentioned later in the video, make sure to mention their name in the description from the start.
+
+                           Organize the description with the following properties, and give a valid json file with JSON schema.<JSONSchema>""{\n    \""description\"": \""A structured schema to represent detailed information from a video or text analysis\"",\n    \""type\"": \""object\"",\n    \""properties\"": {\n        \""Category\"": {\n            \""type\"": \""string\"",\n            \""description\"": \""The category or general type of the content\""\n        },\n        \""DetailedDescriptionOfEventsAndConversations\"": {\n            \""type\"": \""string\"",\n            \""description\"": \""A detailed textual description of the events and conversations in the content\""\n        },\n        \""BrandsCompanyNamesLogos\"": {\n            \""type\"": \""array\"",\n            \""items\"": {\n                \""type\"": \""string\""\n            },\n            \""description\"": \""A list of brands, company names, or logos appearing or mentioned in the content\""\n        },\n        \""KeyLocationsAndScenes\"": {\n            \""type\"": \""array\"",\n            \""items\"": {\n                \""type\"": \""string\""\n            },\n            \""description\"": \""A list of key locations and scenes appearing or mentioned in the content\""\n        },\n        \""KeyThemes\"": {\n            \""type\"": \""array\"",\n            \""items\"": {\n                \""type\"": \""string\""\n            },\n            \""description\"": \""A list of key themes discussed or portrayed in the content\""\n        },\n        \""PeopleAppearingAndMentioned\"": {\n            \""type\"": \""array\"",\n            \""items\"": {\n                \""type\"": \""string\""\n            },\n            \""description\"": \""A list of people who appear or are mentioned in the content\""\n        }\n    },\n    \""required\"": [\n        \""Category\"",\n        \""DetailedDescriptionOfEventsAndConversations\"",\n        \""BrandsCompanyNamesLogos\"",\n        \""KeyLocationsAndScenes\"",\n        \""KeyThemes\"",\n        \""PeopleAppearingAndMentioned\""\n    ]\n}""</JSONSchema>:
+                       
+**Category**
+
+                       
+**DetailedDescriptionOfEventsAndConversations**
+
+                       
+**BrandsCompanyNamesLogos**
+
+                       
+**KeyLocationsAndScenes**
+
+                       
+**KeyThemes**
+
+                       
+**PeopleAppearingAndMentioned**
+ 
+                 Identify a video as one of these categories: News, TV Shows, Live Sport Events, News Analyses. 
+
+                       When describing the DetailedDescriptionOfEventsAndConversations, consider the following instructions for specific video types:
+
+                       * **News:** Pay close attention to transitions, graphics, and on-screen text.
+
+                       * **TV Shows:** Describe facial expressions, body language, appearances, and overall mood.
+
+                       * **Live Sports Events:** Focus on key moments, like goals or fouls, and describe the overall flow and momentum of the game.
+
+                       * **News Analyses:** Identify different perspectives, arguments, and supporting evidence.
+
+                       Make sure to mention people's names in the DetailedDescriptionOfEventsAndConversations and in PeopleAppearingAndMentioned as well as any other information about them like their age, occupation, location, etc. 
+Follow this example for the format of the output:
+
+              {
+                ""Category"": ""TV Show"",
+                ""DetailedDescriptionOfEventsAndConversations"": ""The video starts with a man sitting at a dining table, reading a letter. Two Fiji bottles are visible on the benchtop. He has short, light brown hair and a beard. His name is Harrison. The scene changes to Melissa. Melissa says: ""I'm Melissa, and I'm a hairdresser. I'm 41 years old, and I'm from Sydney."""",
+                ""BrandsCompanyNamesLogos"": [""Lacoste"", ""Fiji""],
+                ""KeyLocationsAndScenes"": [""Apartment""],
+                ""KeyThemes"": [""Marriage""],
+                ""PeopleAppearingAndMentioned"": [
+                ""Harrison, 32, Builder, NSW"",
+                ""Melissa, 41, Hairdresser, NSW""
+                ]
+            }
+               ",,"{""Category"": ""TV Show"", ""DetailedDescriptionOfEventsAndConversations"": ""The video begins with Jayden, a 26-year-old professional kickboxer from Queensland, arriving at a gathering. He greets Tim, Richard, and John. Richard introduces himself to Jayden. Richard asks Jayden what he does for a living. Jayden says that kickboxing is his full-time job, training twice a day, six days a week. Jayden explains that he's not what he appears to be, enjoying snuggles and back tickles when he's not fighting. He adds that he's a romantic and doesn't have a specific type, looking for someone with a good heart. Lucinda, a 43-year-old MC and wedding celebrant from New South Wales, arrives at the same gathering, greeting the other women: Tori and Natasha. Lucinda says that she's looking for a confident man, a great cook who is funny and generous of spirit. She unfolds a scroll, revealing her detailed list of desired qualities in a partner, including \u201chandsome\u201d and \u201cspunky,\u201d prompting laughter from her companions. The next scene shows Lucinda conversing with John Aiken. Lucinda says she wants someone who's good with his clothes off, leading to a humorous exchange about \u201chigh-functioning erection.\u201d  The scene shifts back to the gathering, where Lucinda discusses her ideal partner with Tori and Natasha. She mentions wanting someone well-established, secure, and confident without a big ego, while Tori expresses her desire for a nerdy guy. Lucinda notes Tori's intellectual nature and need for a challenging partner.  The conversation then shifts to discussing what they've written on their lists, with Lucinda noting \u201cpurple\u201d as the color of transcendence, eliciting laughter. Sara, a 29-year-old nutritionist from New South Wales, arrives. She expresses her hopes of walking down the aisle and meeting her future husband.  The video then cuts to another man arriving in a car at the same location. The Sydney skyline is visible in the background. The video then cuts to Sara, a 29-year-old nutritionist from New South Wales, arriving and meeting several other women. It ends with another male arrival at the party."", ""BrandsCompanyNamesLogos"": [""Fiji""], ""KeyLocationsAndScenes"": [""Sydney Harbour"", ""Gathering venue"", ""Boxing gym"", ""Beach"", ""Interview room""], ""KeyThemes"": [""Dating"", ""Marriage"", ""Relationships"", ""First impressions"", ""Expectations""], ""PeopleAppearingAndMentioned"": [""Jayden, 26, Professional kickboxer, Queensland"", ""Tim"", ""Richard"", ""John"", ""Lucinda, 43, MC and Wedding Celebrant, New South Wales"", ""John Aiken"", ""Tori"", ""Natasha"", ""Sara, 29, Nutritionist, New South Wales""]}","{'video_uri': 'gs://raw_nine_files/vlt_video_extract/MAAT/MAAT2024_1_A_HBB.mp4', 'video_metadata': '{\n  ""start_offset"": {\n    ""seconds"": 600,\n    ""nanos"": 0\n  },\n  ""end_offset"": {\n    ""seconds"": 900,\n    ""nanos"": 0\n  }\n}'}",2.0,"The response captures some accurate details about events and conversations, but it also includes information not present within the provided video segment. For example, the response mentions Jayden's training regimen, Lucinda's desire for a ""high-functioning erection,"" and Tori's preference for a nerdy guy, none of which are depicted or discussed within the given timeframe. Additionally, some key details from the video are missing, such as the conversation about Sara wanting tattoos and how many people each of them are meeting.  The location identification is inaccurate, as the Sydney skyline is not visible in the video segment.  Also, there is no mention of Fiji water in the video. Lastly, while it accurately lists some individuals present, it omits several others who appear on screen. This mix of fabricated details and omission of existing information results in a poorly aligned response."
+1,"Your task is to provide a comprehensive description of this video from segment 600 seconds to 900 seconds.
+To complete the task you need to follow these steps:
+
+                           No greetings, closing remarks, or additional comments. Begin immediately with the video analysis and provide only the requested information in the specified format.
+
+                           Idenify all instances of visual product placement. Pay close attention to background details and items held by the characters. List each product placement with the following
+                            information: Brand name, product name (if applicable), and a brief description. Include information about product placement into the description generated for the video
+
+                           Create a transcript of all the speeches, dialogs, narration.
+
+                           Scrupulously examine each scene for any and all visible brand names, logos, and products. Even if a product appears briefly or in the background, it should be included.
+Describe the video content objectively, avoiding any subjective opinions or assumptions.
+
+                           Specify who is saying what. If a person talking can be seen, specify their name and/or occupation. If it is voice behind the scenes, then describe it as a narrator.
+
+                           Be specific when describing. Include all the information that is shown or given.
+
+                           Do not show timestamps.
+
+                           If an unidentified person is shown in the video first, but then their name is mentioned later in the video, make sure to mention their name in the description from the start.
+
+                           Organize the description with the following properties, and give a valid json file with JSON schema.<JSONSchema>""{\n    \""description\"": \""A structured schema to represent detailed information from a video or text analysis\"",\n    \""type\"": \""object\"",\n    \""properties\"": {\n        \""Category\"": {\n            \""type\"": \""string\"",\n            \""description\"": \""The category or general type of the content\""\n        },\n        \""DetailedDescriptionOfEventsAndConversations\"": {\n            \""type\"": \""string\"",\n            \""description\"": \""A detailed textual description of the events and conversations in the content\""\n        },\n        \""BrandsCompanyNamesLogos\"": {\n            \""type\"": \""array\"",\n            \""items\"": {\n                \""type\"": \""string\""\n            },\n            \""description\"": \""A list of brands, company names, or logos appearing or mentioned in the content\""\n        },\n        \""KeyLocationsAndScenes\"": {\n            \""type\"": \""array\"",\n            \""items\"": {\n                \""type\"": \""string\""\n            },\n            \""description\"": \""A list of key locations and scenes appearing or mentioned in the content\""\n        },\n        \""KeyThemes\"": {\n            \""type\"": \""array\"",\n            \""items\"": {\n                \""type\"": \""string\""\n            },\n            \""description\"": \""A list of key themes discussed or portrayed in the content\""\n        },\n        \""PeopleAppearingAndMentioned\"": {\n            \""type\"": \""array\"",\n            \""items\"": {\n                \""type\"": \""string\""\n            },\n            \""description\"": \""A list of people who appear or are mentioned in the content\""\n        }\n    },\n    \""required\"": [\n        \""Category\"",\n        \""DetailedDescriptionOfEventsAndConversations\"",\n        \""BrandsCompanyNamesLogos\"",\n        \""KeyLocationsAndScenes\"",\n        \""KeyThemes\"",\n        \""PeopleAppearingAndMentioned\""\n    ]\n}""</JSONSchema>:
+                       
+**Category**
+
+                       
+**DetailedDescriptionOfEventsAndConversations**
+
+                       
+**BrandsCompanyNamesLogos**
+
+                       
+**KeyLocationsAndScenes**
+
+                       
+**KeyThemes**
+
+                       
+**PeopleAppearingAndMentioned**
+ 
+                 Identify a video as one of these categories: News, TV Shows, Live Sport Events, News Analyses. 
+
+                       When describing the DetailedDescriptionOfEventsAndConversations, consider the following instructions for specific video types:
+
+                       * **News:** Pay close attention to transitions, graphics, and on-screen text.
+
+                       * **TV Shows:** Describe facial expressions, body language, appearances, and overall mood.
+
+                       * **Live Sports Events:** Focus on key moments, like goals or fouls, and describe the overall flow and momentum of the game.
+
+                       * **News Analyses:** Identify different perspectives, arguments, and supporting evidence.
+
+                       Make sure to mention people's names in the DetailedDescriptionOfEventsAndConversations and in PeopleAppearingAndMentioned as well as any other information about them like their age, occupation, location, etc. 
+Follow this example for the format of the output:
+
+              {
+                ""Category"": ""TV Show"",
+                ""DetailedDescriptionOfEventsAndConversations"": ""The video starts with a man sitting at a dining table, reading a letter. Two Fiji bottles are visible on the benchtop. He has short, light brown hair and a beard. His name is Harrison. The scene changes to Melissa. Melissa says: ""I'm Melissa, and I'm a hairdresser. I'm 41 years old, and I'm from Sydney."""",
+                ""BrandsCompanyNamesLogos"": [""Lacoste"", ""Fiji""],
+                ""KeyLocationsAndScenes"": [""Apartment""],
+                ""KeyThemes"": [""Marriage""],
+                ""PeopleAppearingAndMentioned"": [
+                ""Harrison, 32, Builder, NSW"",
+                ""Melissa, 41, Hairdresser, NSW""
+                ]
+            }
+               ",,"{""Category"": ""TV Show"", ""DetailedDescriptionOfEventsAndConversations"": ""The video shows a group of men sitting on a couch in a modern, well-lit room with a city view at night. Jayden, a 26-year-old professional kickboxer from Queensland, enters and introduces himself. Richard comments on Jayden's striking character. Jayden shares that his full-time job is kickboxing, which surprises the others. The scene shifts to Jayden sitting in a boxing gym, talking about his work and softer side. He mentions wanting to have knockouts in front of a crowd. Back at the gathering, the men continue their conversation. Lucinda, a 43-year-old MC and wedding celebrant from New South Wales, arrives in a pink sparkly jacket and matching dress. She greets the other women present. Lucinda shares her thoughts on her ideal partner. The scene transitions to Lucinda sitting on a couch and reading a scroll with notes about the men. She laughs after reading the notes."", ""BrandsCompanyNamesLogos"": [], ""KeyLocationsAndScenes"": [""Modern living room with city view"", ""Boxing gym"", ""Lucinda's home"", ""Restaurant with city view""], ""KeyThemes"": [""First impressions"", ""Dating"", ""Relationships"", ""Personality""], ""PeopleAppearingAndMentioned"": [""Jayden, 26, Professional kickboxer, QLD"", ""Richard"", ""Lucinda, 43, MC & Wedding Celebrant, NSW""]}","{'video_uri': 'gs://raw_nine_files/vlt_video_extract/MAAT/MAAT2024_1_A_HBB.mp4', 'video_metadata': '{\n  ""start_offset"": {\n    ""seconds"": 600,\n    ""nanos"": 0\n  },\n  ""end_offset"": {\n    ""seconds"": 900,\n    ""nanos"": 0\n  }\n}'}",2.0,"The response captures some accurate details about the video segment, such as the introductions of Jayden and Lucinda and their professions. However, it misses or misrepresents other crucial information. For example, the video doesn't show Lucinda's home, and the detailed description doesn't accurately reflect the conversations happening. The 'Key Locations and Scenes' and 'Detailed Description of Events and Conversations' are poorly aligned with the actual video content."
