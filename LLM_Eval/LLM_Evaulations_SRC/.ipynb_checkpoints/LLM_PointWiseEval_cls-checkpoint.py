@@ -2,6 +2,8 @@ from google.cloud import aiplatform
 import vertexai
 import pandas as pd
 import json
+import math
+from collections import Counter
 
 from vertexai.evaluation import (
     EvalTask, 
@@ -21,30 +23,51 @@ class PointWiseEvaluationClient:
         self,
         project: str=None,
         location: str = "us-central1",
-        items: list[str] = None,
-        response_llm_model: str= None,
+        items: pd.core.frame.DataFrame = None,
+        response_desc_column_name: str= 'description',
+        response_llm_model_column_name: str= None,
+        response_avgLogprobs_column_name: str=None,
         eval_metrics: list[dict] =None,
         experiment_name: str="pointwise-evaluation-experiment",
         evaluation_prompt: str="Evaluate the AI's contribution to a meaningful content generation",
-        delete_experiment: bool= True
+        delete_experiment: bool= True,
+        sys_metrics: bool= True,
+        ):
+        """
+        Initis the hyper parameters
         
-
-    ):
+        Args:
+         str project:  project id 
+         str locations: project location         
+         Dataframe items: dataframe of AI-generated responses
+         str response_desc_column_name: the name of the column in the 'items' dataframe that includes the AI-generated response
+         str response_llm_model_column_name: the name of the column in the 'items' dataframe that includes the name of the model that is used for extracting AI-generated responses
+         list[dict] eval_metrics: user defined evaluation metrics along with their rating rubric
+                                  e.g.  [ {  "metric": "safety", "criteria": "..." }]
+         str experiment_name: name of the evaluation experiment
+         str evaluation_prompt: the prompt text which will be used as a prompt to evaluate the eval_metrics        
+         bool delete_experiment: delete the generated experience after the evaluation are done if True. Will save costs.
+         bool sys_metrics: calculates some mathematical metrics including perplexity, entropy if set to True.
+        """
         
-       
-        self.location = location
-        self.project = project     
-        self.items =items
-        self.eval_metrics=eval_metrics
+        #set the parameters
+        self.location = location  
+        self.project = project   
+        self.items =items  
+        self.eval_metrics=eval_metrics #user defined metrics along with their rubric ratings
         self.experiment_name=experiment_name
         self.evaluation_prompt=evaluation_prompt
-        self.response_llm_model=response_llm_model
+        self.response_llm_model_column_name=response_llm_model_column_name
+        self.response_desc_column_name=response_desc_column_name
         self.delete_experiment=delete_experiment
+        self.response_avgLogprobs_column_name= response_avgLogprobs_column_name
+        self.sys_metrics=sys_metrics
         self.run_experiment_name=self.experiment_name+"-"+ str(uuid.uuid4())
-    
+        
+        #initialize Vertex AI
         vertexai.init(project=self.project, location= self.location )
-       
- 
+         
+
     def set_evaluation_data(self):
         """
         Sets the input data as in a dataframe for evaluation
@@ -55,15 +78,18 @@ class PointWiseEvaluationClient:
                                 {
                                    # "instruction": instructions,
                                    # "context": contexts,
-                                    "response": self.items,
-                                    "response_llm_model":[self.response_llm_model]*len(self.items),
+                                    "response": self.items[self.response_desc_column_name].to_list(),
+                                    **({"avgLogprobs": self.items[self.response_avgLogprobs_column_name].to_list()} if 
+                                                       self.response_avgLogprobs_column_name !=None else {}),
+                                    "response_llm_model":[self.response_llm_model_column_name]*len(self.items),
                                     "run_experiment_name":[self.run_experiment_name]*len(self.items),
-                                    "run_experiment_date" : [datetime.today().date()]*len(self.items),
+                                    "run_experiment_date" :  pd.to_datetime( [datetime.today().date()]*len(self.items)).\
+                                                             strftime('%Y-%m-%d'),
 
                                 }
                             )
-       
-        eval_dataset['run_experiment_date'] = pd.to_datetime(eval_dataset['run_experiment_date']).dt.strftime('%Y-%m-%d')
+         
+        #eval_dataset['run_experiment_date'] = pd.to_datetime(eval_dataset['run_experiment_date']).dt.strftime('%Y-%m-%d')
         
         return eval_dataset
 
@@ -72,7 +98,7 @@ class PointWiseEvaluationClient:
         Log the evaluation result into BigQuery, altering the table schema if needed.
 
         Args:
-            result (dataframe): The evaluation result to be recorded into the database.
+            dataframe result : The evaluation result to be recorded into the database.
         """
         # Load configuration from config.json
         with open('config.json') as config_file:
@@ -178,55 +204,106 @@ class PointWiseEvaluationClient:
         else:
             print(f"Evaluations have successfully been loaded into {table_full_id}.")
 
+    def perplexity(self,prob: float):    
+        """Extract perplexity- models confidence in predicting next token using average log probablity
 
-       
+          Args:
+          float prob: average log probability
+
+          Returns:
+          float:  perplexity value
+
+          """
+        return math.exp(-prob)
+    
+    
+    def entropy(self,text: str):
+        """Extracts entropy of a texts, higher entropy means diverse range of tokens have been choosen
+
+        Args:
+        str text: the input text
+
+        Returns:
+        float entropy: entropy value of input text
+        """
+
+        # Tokenize the text into words (ignoring punctuation)
+        words = text.lower().split()
+
+        # Get the frequency of each word
+        word_count = Counter(words)
+
+        # Total number of words
+        total_words = len(words)
+
+        # Calculate the probability of each word
+        probabilities = [count / total_words for count in word_count.values()]
+
+        # Calculate entropy using the formula
+        entrpy = -sum(p * math.log2(p) for p in probabilities)
+
+        return entrpy
+
+
     def get_evaluations(self):
         """
-        Get the evaluations using user defined rating criteria.
+        Extracts the evaluation metricsusing:
+            1-user defined metrics and rating criteria
+            2-pre-defined mathematical metrics: perplexity, entropy
 
         """
-        
-        metrics=[]
-        # Define  pointwise quality metric(s)
-        for metric in self.eval_metrics:
-            # Define a pointwise quality metric
-            pointwise_quality_metric_prompt = f"""{self.evaluation_prompt}; evaluate {metric['metric']}.
-            Rate the response on a 1-5 scale, using this rubric criteria:
-
-            # Rubric rating criteria
-            {metric['criteria']}
-            # AI-generated Response
-            {{response}}
-            """
-            pointwise_metric=PointwiseMetric(
-                metric=metric['metric'],
-                metric_prompt_template=pointwise_quality_metric_prompt,
-            )
-            metrics.append(pointwise_metric)
-       
         # set evaluation data
         eval_dataset=self.set_evaluation_data()
         
-        # Create the evaluation task
-        eval_task = EvalTask(
-            dataset=eval_dataset,
-            metrics=metrics,
-            experiment=self.experiment_name,
-        )
-        # Run evaluation on the data using the evaluation service
-        results = eval_task.evaluate( 
+        #calculate the system defined metrics
+        if self.sys_metrics:
+            # the evrage prob column is given in the data, calculate perplexity
+            if self.response_avgLogprobs_column_name:
+                eval_dataset['perplexity']=eval_dataset[self.response_avgLogprobs_column_name].apply(self.perplexity)
+            
+            #calculate entropy
+            eval_dataset['entropy']=eval_dataset['response'].apply(self.entropy)
+            eval_results=eval_dataset
+        
+        #calcualte user defined metrics
+        if self.eval_metrics:
+            metrics=[]
+            # Define  pointwise quality metric(s)
+            for metric in self.eval_metrics:
+                # Define a pointwise quality metric
+                pointwise_quality_metric_prompt = f"""{self.evaluation_prompt}; evaluate {metric['metric']}.
+                # Rubric rating criteria
+                {metric['criteria']}
+                # AI-generated Response
+                {{response}}
+                """
+                pointwise_metric=PointwiseMetric(
+                    metric=metric['metric'],
+                    metric_prompt_template=pointwise_quality_metric_prompt,
+                )
+                metrics.append(pointwise_metric)
+                
+            # Create the evaluation task
+            eval_task = EvalTask(
+                dataset=eval_dataset,
+                metrics=metrics,
+                experiment=self.experiment_name,
+            )
+            # Run evaluation on the data using the evaluation service
+            results = eval_task.evaluate( 
 
-                experiment_run_name=self.run_experiment_name,
-            ) 
-        
-        #record the result into bigquery
-        self.log_evaluations(results.metrics_table)
-        
-        #Delete the experiment after getting the result
-        if self.delete_experiment:
-            experiment = aiplatform.Experiment(self.experiment_name)
-            experiment.delete()
- 
-        return results.metrics_table
+                    experiment_run_name=self.run_experiment_name,
+                ) 
+            #Delete the experiment after getting the result
+            if self.delete_experiment:
+                experiment = aiplatform.Experiment(self.experiment_name)
+                experiment.delete()
+                
+            eval_results=results.metrics_table
+            
+        #log the statistics into bigquery
+        self.log_evaluations(eval_results)
+            
+        return eval_results 
 
     
