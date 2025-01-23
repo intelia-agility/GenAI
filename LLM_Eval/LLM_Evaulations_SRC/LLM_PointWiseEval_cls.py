@@ -11,12 +11,11 @@ from vertexai.evaluation import (
     PointwiseMetricPromptTemplate,
     CustomMetric
 )
- 
+
 import uuid 
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 from datetime import datetime
-
 
 from vertexai.preview.generative_models import (
     Content,
@@ -29,7 +28,6 @@ from vertexai.preview.generative_models import (
     HarmCategory,
 )
 
-
 class PointWiseEvaluationClient:
     """Wrapper around Pointwise Evaluation Client."""
 
@@ -41,9 +39,13 @@ class PointWiseEvaluationClient:
         response_desc_column_name: str= 'description',
         response_llm_model_column_name: str= None,
         response_avgLogprobs_column_name: str=None,
+        response_mediaType_column_name: str=None,
+        response_media_column_metadata : dict=None,
+        response_userPrompt_column_name: str=None,
+        multimodal_evaluation_promt: dict=None,
         eval_metrics: list[dict] =None,
         experiment_name: str="pointwise-evaluation-experiment",
-        evaluation_prompt: str="Evaluate the AI's contribution to a meaningful content generation",
+        evaluation_prompt: str="Evaluate the AI's contribution to a meaningful content generation",  
         delete_experiment: bool= True,
         sys_metrics: bool= True,
         ):
@@ -56,6 +58,13 @@ class PointWiseEvaluationClient:
          Dataframe items: dataframe of AI-generated responses
          str response_desc_column_name: the name of the column in the 'items' dataframe that includes the AI-generated response
          str response_llm_model_column_name: the name of the column in the 'items' dataframe that includes the name of the model that is used for extracting AI-generated responses
+         str response_avgLogprobs_column_name:  the name of the column in the 'items' dataframe that includes AI-generated response average probability log values
+         str response_mediaType_column_name:  the name of the column in the 'items' dataframe that represent media type
+         str response_userPrompt_column_name: the name of the column in the 'items' dataframe that represent user prompt using which the AI model generated the response
+         dict response_media_column_metadata: dictionary including the name of fileuri, start and endoffset of the media if available
+                                              e.g. {'fileUri':'fileUri', 'startOffset':'startOffset_seconds','endOffset':'endOffset_seconds', 'mediaType':'mediaType'}           
+         dict multimodal_evaluation_promt: dictionary including prompts for multimodal content evaluations.
+                                           e.g. {"video_prompt":"...","image_prompt":"..."}
          list[dict] eval_metrics: user defined evaluation metrics along with their rating rubric
                                   e.g.  [ {  "metric": "safety", "criteria": "..." }]
          str experiment_name: name of the evaluation experiment
@@ -71,7 +80,11 @@ class PointWiseEvaluationClient:
         self.eval_metrics=eval_metrics #user defined metrics along with their rubric ratings
         self.experiment_name=experiment_name
         self.evaluation_prompt=evaluation_prompt
+        self.multimodal_evaluation_promt=multimodal_evaluation_promt
+        self.response_userPrompt_column_name=response_userPrompt_column_name
         self.response_llm_model_column_name=response_llm_model_column_name
+        self.response_media_column_metadata=response_media_column_metadata
+        self.response_mediaType_column_name=response_mediaType_column_name
         self.response_desc_column_name=response_desc_column_name
         self.delete_experiment=delete_experiment
         self.response_avgLogprobs_column_name= response_avgLogprobs_column_name
@@ -84,36 +97,66 @@ class PointWiseEvaluationClient:
 
     def set_evaluation_data(self):
         """
-        Sets the input data as in a dataframe for evaluation
+        Prepare the input data as in a dataframe for evaluation
 
         """
             
-        eval_dataset= pd.DataFrame(
-                                {
-                                   # "instruction": instructions,
-                                   # "context": contexts,
-                                    "response": self.items[self.response_desc_column_name].to_list(),
-                                    **({"avgLogprobs": self.items[self.response_avgLogprobs_column_name].to_list()} if 
-                                                       self.response_avgLogprobs_column_name !=None else {}),
-                                    "response_llm_model":[self.response_llm_model_column_name]*len(self.items),
-                                    "run_experiment_name":[self.run_experiment_name]*len(self.items),
-                                    "run_experiment_date" :  pd.to_datetime( [datetime.today().date()]*len(self.items)).\
-                                                             strftime('%Y-%m-%d'),
-
-                                }
-                            )
-         
-        #eval_dataset['run_experiment_date'] = pd.to_datetime(eval_dataset['run_experiment_date']).dt.strftime('%Y-%m-%d')
+        eval_dataset = pd.DataFrame(
+                        {
+                            "response": self.items[self.response_desc_column_name].to_list(),
+                            "evaluation_prompt":[self.evaluation_prompt]* len(self.items),                           
+                            **({"mediaType": self.items[self.response_mediaType_column_name].to_list()} if 
+                               self.response_mediaType_column_name !=None else {}),   
+                            **({"avgLogprobs": self.items[self.response_avgLogprobs_column_name].to_list()} if 
+                               self.response_avgLogprobs_column_name !=None else {}),
+                            **({"multimodal_evaluation_promt": [
+                                self.multimodal_evaluation_promt['video_prompt'] if 'video' in str(self.items[self.response_mediaType_column_name][i]).lower() else 
+                                self.multimodal_evaluation_promt['image_prompt'] if 'image' in str(self.items[self.response_mediaType_column_name][i]).lower() else None
+                                for i in range(len(self.items))
+                            ]} if self.response_mediaType_column_name!=None and self.multimodal_evaluation_promt!=None else {}),
+                       
+                             **({"instruction": self.items[self.response_userPrompt_column_name].to_list()} if 
+                               self.response_userPrompt_column_name !=None else {}),                            
+                            
+                            "reference": [
+                                        json.dumps(
+                                            {
+                                                "fileuri": self.items[self.response_media_column_metadata['fileUri']][i],
+                                                "metadata": {
+                                                    "start_offset": {
+                                                        "seconds": int(self.items[self.response_media_column_metadata['startOffset']][i]),
+                                                        "nanos": 0,
+                                                    },
+                                                    "end_offset": {
+                                                        "seconds": int(self.items[self.response_media_column_metadata['endOffset']][i]),
+                                                        "nanos": 0,
+                                                    },
+                                                } if self.response_media_column_metadata['startOffset'] in self.items.columns and 
+                                                     self.response_media_column_metadata['endOffset'] in self.items.columns else {}
+                                            }
+                                        ) if self.response_media_column_metadata is not None and 
+                                             self.response_media_column_metadata.get('fileUri') is not None else "{}"
+                                        for i in range(len(self.items))
+                                    ],
+                            "response_llm_model": self.items[self.response_llm_model_column_name],
+                            "run_experiment_name": [self.run_experiment_name] * len(self.items),
+                            "run_experiment_date": [datetime.today().strftime('%Y-%m-%d')] * len(self.items),
+                        }
+                    )
         
         return eval_dataset
-
-    def log_evaluations(self, result):
+    
+    def log_evaluations(self,result):
         """
-        Log the evaluation result into BigQuery, altering the table schema if needed.
+        Log the evaluation result into BigQuery, converting all columns to string type.
 
         Args:
             dataframe result : The evaluation result to be recorded into the database.
         """
+        import json
+        from google.cloud import bigquery
+        from google.cloud.exceptions import NotFound
+
         # Load configuration from config.json
         with open('config.json') as config_file:
             config = json.load(config_file)
@@ -121,102 +164,188 @@ class PointWiseEvaluationClient:
         table_id = config['pointwise_eval_table']
         dataset_id = config['eval_dataset']
         project_id = config["project"]
-        location_id=config["project_location"]
+        location_id = config["project_location"]
         table_full_id = f"{project_id}.{dataset_id}.{table_id}"
         dataset_full_id = f"{project_id}.{dataset_id}"
 
-        #remove unwanted characters from column name
-        result.columns = result.columns.str.replace("/", "-")
+        # Remove unwanted characters from column names
+        result.columns = result.columns.str.replace("/", "_")
+
+        # Convert all columns to string
+        result = result.astype(str)
+
+        # Convert DataFrame to list of dictionaries
+        data_as_dict = result.to_dict(orient='records')
 
         # Initialize BigQuery Client
         client = bigquery.Client()
 
 
-        # Ensure the dataset exists
         try:
             client.get_dataset(dataset_full_id)
             print(f"Dataset {dataset_full_id} exists.")
         except NotFound:
             print(f"Dataset {dataset_full_id} not found. Creating dataset...")
             dataset = bigquery.Dataset(dataset_full_id)
-            dataset.location = location_id 
+            dataset.location = location_id
             client.create_dataset(dataset)
             print(f"Dataset {dataset_full_id} created successfully.")
 
 
-
-
+        # Ensure the dataset exists    
         try:
             # Fetch the existing table
             table = client.get_table(table_full_id)
             existing_schema = {field.name: field.field_type for field in table.schema}
             print(f"Table {table_full_id} exists. Checking schema...")
 
-            # Infer schema from DataFrame
-            new_schema = {
-                name: bigquery.enums.SqlTypeNames.DATE if (dtype == 'object'  and name=='run_experiment_date')
-                else bigquery.enums.SqlTypeNames.STRING if dtype == 'object'
-                else bigquery.enums.SqlTypeNames.FLOAT if dtype in ['float64', 'float32']
-                else bigquery.enums.SqlTypeNames.INTEGER if dtype in ['int64', 'int32']
-                else bigquery.enums.SqlTypeNames.BOOLEAN if dtype == 'bool'
-                else bigquery.enums.SqlTypeNames.TIMESTAMP if dtype == 'datetime64[ns]'
-                else bigquery.enums.SqlTypeNames.STRING
-                for name, dtype in zip(result.columns, result.dtypes)
-            }
-
-            # Identify schema differences
+            # Identify new columns to be added
             schema_changes = []
-            for col, dtype in new_schema.items():
+            for col in result.columns:
                 if col not in existing_schema:
-                    # Add new column
-                    schema_changes.append(bigquery.SchemaField(col, dtype))
-                elif existing_schema[col] != dtype:
-                    print(f"Type change detected for column '{col}' from {existing_schema[col]} to {dtype}.")
-                    # BigQuery doesn't allow direct type changes; handle as needed.
+                    schema_changes.append(bigquery.SchemaField(col, bigquery.enums.SqlTypeNames.STRING))
 
             if schema_changes:
                 print("Altering schema to add new columns...")
                 table.schema = table.schema + schema_changes
                 table = client.update_table(table, ["schema"])
-                print(f"Table {table_full_id} schema updated successfully.")
-            else:
-                print("Schema is already up-to-date.")
+                print(f"Schema updated successfully.")
 
         except NotFound:
             print(f"Table {table_full_id} not found. Creating table...")
-            # Infer schema from DataFrame
-            schema = [
-                bigquery.SchemaField(name, bigquery.enums.SqlTypeNames.DATE if (dtype == 'object'  and name=='run_experiment_date')
-                                     else bigquery.enums.SqlTypeNames.STRING if dtype == 'object' 
-                                     else bigquery.enums.SqlTypeNames.FLOAT if dtype in ['float64', 'float32']
-                                     else bigquery.enums.SqlTypeNames.INTEGER if dtype in ['int64', 'int32']
-                                     else bigquery.enums.SqlTypeNames.BOOLEAN if dtype == 'bool'
-                                     else bigquery.enums.SqlTypeNames.TIMESTAMP if dtype == 'datetime64[ns]'
-                                     else bigquery.enums.SqlTypeNames.STRING)
-                for name, dtype in zip(result.columns, result.dtypes)
-            ]
+            # Define schema as all string types
+            schema = [bigquery.SchemaField(name, bigquery.enums.SqlTypeNames.STRING) for name in result.columns]
 
             # Create the table
             table = bigquery.Table(table_full_id, schema=schema)
             table = client.create_table(table)
             print(f"Table {table_full_id} created successfully.")
 
-        # Define job configuration
-        job_config = bigquery.LoadJobConfig(
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-        )
 
-        # Save DataFrame to BigQuery
-        job = client.load_table_from_dataframe(result, table_full_id, job_config=job_config)
-        job.result()  # Wait for the job to complete
+        # Insert rows into BigQuery
+        try:
+            errors = client.insert_rows_json(table_full_id, data_as_dict)
+            if not errors:
+                print(f"Evaluations have successfully been loaded into {table_full_id}.")
+            else:
+                print("Errors occurred while loading data:")
+                for error in errors:
+                    print(error)
+        except Exception as e:
+            print(f"An error occurred while inserting data: {e}")
 
-        # Additional error inspection after the job completes
-        if job.errors:
-            print("The job completed with the following errors:")
-            for error in job.errors:
-                print(f" - {error['message']}")
-        else:
-            print(f"Evaluations have successfully been loaded into {table_full_id}.")
+        
+
+#     def log_evaluations(self, result):
+#         """
+#         Log the evaluation result into BigQuery, altering the table schema if needed.
+
+#         Args:
+#             dataframe result : The evaluation result to be recorded into the database.
+#         """
+#         # Load configuration from config.json
+#         with open('config.json') as config_file:
+#             config = json.load(config_file)
+
+#         table_id = config['pointwise_eval_table']
+#         dataset_id = config['eval_dataset']
+#         project_id = config["project"]
+#         location_id=config["project_location"]
+#         table_full_id = f"{project_id}.{dataset_id}.{table_id}"
+#         dataset_full_id = f"{project_id}.{dataset_id}"
+
+#         #remove unwanted characters from column name
+#         result.columns = result.columns.str.replace("/", "_")
+
+#         # Initialize BigQuery Client
+#         client = bigquery.Client()
+
+
+#         # Ensure the dataset exists
+#         try:
+#             client.get_dataset(dataset_full_id)
+#             print(f"Dataset {dataset_full_id} exists.")
+#         except NotFound:
+#             print(f"Dataset {dataset_full_id} not found. Creating dataset...")
+#             dataset = bigquery.Dataset(dataset_full_id)
+#             dataset.location = location_id 
+#             client.create_dataset(dataset)
+#             print(f"Dataset {dataset_full_id} created successfully.")
+
+
+
+
+#         try:
+#             # Fetch the existing table
+#             table = client.get_table(table_full_id)
+#             existing_schema = {field.name: field.field_type for field in table.schema}
+#             print(f"Table {table_full_id} exists. Checking schema...")
+
+#             # Infer schema from DataFrame
+#             new_schema = {
+#                 name: bigquery.enums.SqlTypeNames.DATE if (dtype == 'object'  and name=='run_experiment_date')
+#                 else bigquery.enums.SqlTypeNames.STRING if dtype == 'object'
+#                 else bigquery.enums.SqlTypeNames.FLOAT if dtype in ['float64', 'float32']
+#                 else bigquery.enums.SqlTypeNames.INTEGER if dtype in ['int64', 'int32']
+#                 else bigquery.enums.SqlTypeNames.BOOLEAN if dtype == 'bool'
+#                 else bigquery.enums.SqlTypeNames.TIMESTAMP if dtype == 'datetime64[ns]'
+#                 else bigquery.enums.SqlTypeNames.STRING
+#                 for name, dtype in zip(result.columns, result.dtypes)
+#             }
+
+#             # Identify schema differences
+#             schema_changes = []
+#             for col, dtype in new_schema.items():
+#                 if col not in existing_schema:
+#                     # Add new column
+#                     schema_changes.append(bigquery.SchemaField(col, dtype))
+#                 elif existing_schema[col] != dtype:
+#                     print(f"Type change detected for column '{col}' from {existing_schema[col]} to {dtype}.")
+#                     # BigQuery doesn't allow direct type changes; handle as needed.
+
+#             if schema_changes:
+#                 print("Altering schema to add new columns...")
+#                 table.schema = table.schema + schema_changes
+#                 table = client.update_table(table, ["schema"])
+#                 print(f"Table {table_full_id} schema updated successfully.")
+#             else:
+#                 print("Schema is already up-to-date.")
+
+#         except NotFound:
+#             print(f"Table {table_full_id} not found. Creating table...")
+#             # Infer schema from DataFrame
+#             schema = [
+#                 bigquery.SchemaField(name, bigquery.enums.SqlTypeNames.DATE if (dtype == 'object'  and name=='run_experiment_date')
+#                                      else bigquery.enums.SqlTypeNames.STRING if dtype == 'object' 
+#                                      else bigquery.enums.SqlTypeNames.FLOAT if dtype in ['float64', 'float32']
+#                                      else bigquery.enums.SqlTypeNames.INTEGER if dtype in ['int64', 'int32']
+#                                      else bigquery.enums.SqlTypeNames.BOOLEAN if dtype == 'bool'
+#                                      else bigquery.enums.SqlTypeNames.TIMESTAMP if dtype == 'datetime64[ns]'
+#                                      else bigquery.enums.SqlTypeNames.STRING)
+#                 for name, dtype in zip(result.columns, result.dtypes)
+#             ]
+
+#             # Create the table
+#             table = bigquery.Table(table_full_id, schema=schema)
+#             table = client.create_table(table)
+#             print(f"Table {table_full_id} created successfully.")
+
+#         # Define job configuration
+#         job_config = bigquery.LoadJobConfig(
+#             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+#         )
+
+#         # Save DataFrame to BigQuery
+#         job = client.load_table_from_dataframe(result, table_full_id, job_config=job_config)
+#         job.result()  # Wait for the job to complete
+
+#         # Additional error inspection after the job completes
+#         if job.errors:
+#             print("The job completed with the following errors:")
+#             for error in job.errors:
+#                 print(f" - {error['message']}")
+#         else:
+#             print(f"Evaluations have successfully been loaded into {table_full_id}.")
 
     def perplexity(self,prob: float):    
         """Extract perplexity- models confidence in predicting next token using average log probablity
@@ -257,8 +386,108 @@ class PointWiseEvaluationClient:
         entrpy = -sum(p * math.log2(p) for p in probabilities)
 
         return entrpy
+    
+    
+    def get_autorater_response(self, metric_prompt: list, llm_model: str="gemini-1.5-pro") -> dict:
+        
+        """Extract evaluation metric on a AI-generated content using a AI-as-judge approach
+        
+        Args:
+        list metric_prompt: the input metric prompt parameters
+        str llm_model: evaluation model
 
+        Returns:
+        dict response_json: the evaluated metric in json format
+        """
+            
+        # set evaluation metric schema
+        metric_response_schema = {
+            "type": "OBJECT",
+            "properties": {
+                "score": {"type": "NUMBER"},
+                "explanation": {"type": "STRING"},
+            },
+            "required": ["score", "explanation"],
+        }
 
+        #define a generative model as an autorator
+        autorater = GenerativeModel(
+            llm_model,
+            generation_config=GenerationConfig(
+                response_mime_type="application/json",
+                response_schema=metric_response_schema,
+            ),
+            safety_settings={
+                HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            },
+        )
+
+        #generate the rating metrics as per requested measures and metric in the prompt
+        response = autorater.generate_content(metric_prompt)
+
+        response_json = {}
+
+        if response.candidates and len(response.candidates) > 0:
+            candidate = response.candidates[0]
+            if (
+                candidate.content
+                and candidate.content.parts
+                and len(candidate.content.parts) > 0
+            ):
+                part = candidate.content.parts[0]
+                if part.text:
+                    response_json = json.loads(part.text)
+
+        return response_json
+
+    def custom_coverage_fn(self,instance):
+       
+        """Extract evaluation metric on a AI-generated content using a AI-as-judge approach
+        
+        Args:
+        dict instance: an instance of predictions that should be evaluated
+       
+        Returns:
+        dict : coverage evaluation
+        """
+        
+        fileUri = json.loads(instance["reference"])["fileuri"]
+        eval_instruction_template =instance["multimodal_evaluation_promt"] 
+        response = instance["response"]
+        
+        evaluation_prompt=[]
+        # set the evaluation prompt
+        if 'video' in instance["mediaType"]:   
+            evaluation_prompt = [
+                eval_instruction_template,       
+                "VIDEO URI: ",
+                fileUri,
+                "VIDEO METADATA: ",
+                json.dumps(json.loads(instance["reference"])["metadata"]),                
+                "GENERATED RESPONSE: ",
+                response,
+            ]
+        elif 'image' in instance["mediaType"]:
+            # generate the evaluation prompt
+            evaluation_prompt = [
+                eval_instruction_template,       
+                "IMAGE URI: ",
+                fileUri,                
+                "GENERATED RESPONSE: ",
+                response,
+            ]
+     
+        #generate evaluation response
+        evaluation_response = self.get_autorater_response(evaluation_prompt)
+        return {
+           "custom_coverage":  evaluation_response.get("score", ""),
+             "explanation": evaluation_response.get("explanation", "") 
+        }
+    
     def get_evaluations(self):
         """
         Extracts the evaluation metricsusing:
@@ -266,6 +495,7 @@ class PointWiseEvaluationClient:
             2-pre-defined mathematical metrics: perplexity, entropy
 
         """
+        metrics=[]
         # set evaluation data
         eval_dataset=self.set_evaluation_data()
         
@@ -278,10 +508,22 @@ class PointWiseEvaluationClient:
             #calculate entropy
             eval_dataset['entropy']=eval_dataset['response'].apply(self.entropy)
             eval_results=eval_dataset
-        
-        #calcualte user defined metrics
-        if self.eval_metrics:
-            metrics=[]
+            
+        #calculate coverage metrics
+        if self.multimodal_evaluation_promt:
+            
+            #create a custome coverage metric
+            custom_coverage_metric = CustomMetric(
+                name="custom_coverage",
+                metric_function=self.custom_coverage_fn,
+            )
+            
+            metrics. append(custom_coverage_metric)
+ 
+
+
+        #set user defined metrics
+        if self.eval_metrics:   
             # Define  pointwise quality metric(s)
             for metric in self.eval_metrics:
                 # Define a pointwise quality metric
@@ -297,6 +539,8 @@ class PointWiseEvaluationClient:
                 )
                 metrics.append(pointwise_metric)
                 
+        #if any metric is defined define task and extract metrics
+        if metrics:
             # Create the evaluation task
             eval_task = EvalTask(
                 dataset=eval_dataset,
