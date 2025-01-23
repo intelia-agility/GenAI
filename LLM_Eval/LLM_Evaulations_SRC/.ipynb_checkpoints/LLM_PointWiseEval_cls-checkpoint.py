@@ -8,13 +8,27 @@ from collections import Counter
 from vertexai.evaluation import (
     EvalTask, 
     PointwiseMetric,
-    PointwiseMetricPromptTemplate
+    PointwiseMetricPromptTemplate,
+    CustomMetric
 )
  
 import uuid 
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 from datetime import datetime
+
+
+from vertexai.preview.generative_models import (
+    Content,
+    GenerationConfig,
+    GenerationResponse,
+    GenerativeModel,
+    Image,
+    Part as GenerativeModelPart,
+    HarmBlockThreshold,
+    HarmCategory,
+)
+
 
 class PointWiseEvaluationClient:
     """Wrapper around Pointwise Evaluation Client."""
