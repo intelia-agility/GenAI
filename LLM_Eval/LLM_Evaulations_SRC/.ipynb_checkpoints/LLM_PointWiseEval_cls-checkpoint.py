@@ -349,7 +349,7 @@ class PointWiseEvaluationClient:
         fileUri = json.loads(instance["reference"])["fileuri"]
         eval_instruction_template =instance["multimodal_evaluation_promt"] 
         response = instance["response"]
-        user_prompt_instruction= instance["response"]
+        user_prompt_instruction= instance["instruction"]
         
         evaluation_prompt=[]
         # set the evaluation prompt

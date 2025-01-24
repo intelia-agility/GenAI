@@ -4,14 +4,6 @@ import pandas as pd
 import json
 import math
 from collections import Counter
-
-from vertexai.evaluation import (
-    EvalTask, 
-    PointwiseMetric,
-    PointwiseMetricPromptTemplate,
-    CustomMetric
-)
-
 import uuid 
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
@@ -28,26 +20,25 @@ from vertexai.preview.generative_models import (
     HarmCategory,
 )
 
-class PointWiseEvaluationClient:
-    """Wrapper around Pointwise Evaluation Client."""
+class PairwiseEvaluationClient:
+    """Wrapper around Pairwise Evaluation Client."""
 
     def __init__(
         self,
         project: str=None,
         location: str = "us-central1",
         items: pd.core.frame.DataFrame = None,
-        response_desc_column_name: str= 'description',
-        response_llm_model_column_name: str= None,
-        response_avgLogprobs_column_name: str=None,
+        response_A_desc_column_name: str= 'description_A',
+        response_B_desc_column_name: str= 'description_B',
+        response_A_llm_model_column_name: str= None,
+        response_B_llm_model_column_name: str=None,
         response_mediaType_column_name: str=None,
         response_media_column_metadata : dict=None,
-        response_userPrompt_column_name: str=None,
-        multimodal_evaluation_promt: dict=None,
-        eval_metrics: list[dict] =None,
-        experiment_name: str="pointwise-evaluation-experiment",
-        evaluation_prompt: str="Evaluate the AI's contribution to a meaningful content generation",  
-        delete_experiment: bool= True,
-        sys_metrics: bool= True,
+        response_A_userPrompt_column_name: str=None,
+        response_B_userPrompt_column_name: str=None,
+        multimodal_evaluation_promt: dict=None,       
+        experiment_name: str="pairwise-evaluation-experiment",
+       
         ):
         """
         Initis the hyper parameters
@@ -56,21 +47,18 @@ class PointWiseEvaluationClient:
          str project:  project id 
          str locations: project location         
          Dataframe items: dataframe of AI-generated responses
-         str response_desc_column_name: the name of the column in the 'items' dataframe that includes the AI-generated response
-         str response_llm_model_column_name: the name of the column in the 'items' dataframe that includes the name of the model that is used for extracting AI-generated responses
-         str response_avgLogprobs_column_name:  the name of the column in the 'items' dataframe that includes AI-generated response average probability log values
+         str response_A_desc_column_name: the name of the column in the 'items' dataframe that includes the AI-generated response for model A
+         str response_B_desc_column_name: the name of the column in the 'items' dataframe that includes the AI-generated response for model B
+         str response_A_llm_model_column_name: the name of the column in the 'items' dataframe that includes the model A's name that is used for extracting AI-generated responses A
+         str response_B_llm_model_column_name: the name of the column in the 'items' dataframe that includes the model B's name that is used for extracting AI-generated responses B
          str response_mediaType_column_name:  the name of the column in the 'items' dataframe that represent media type
-         str response_userPrompt_column_name: the name of the column in the 'items' dataframe that represent user prompt using which the AI model generated the response
+         str response_A_userPrompt_column_name: the name of the column in the 'items' dataframe that represent user prompt for model A using which the AI model generated the response A
+         str response_A_userPrompt_column_name: the name of the column in the 'items' dataframe that represent user prompt for model B using which the AI model generated the response B
          dict response_media_column_metadata: dictionary including the name of fileuri, start and endoffset of the media if available
                                               e.g. {'fileUri':'fileUri', 'startOffset':'startOffset_seconds','endOffset':'endOffset_seconds', 'mediaType':'mediaType'}           
          dict multimodal_evaluation_promt: dictionary including prompts for multimodal content evaluations.
-                                           e.g. {"video_prompt":"...","image_prompt":"..."}
-         list[dict] eval_metrics: user defined evaluation metrics along with their rating rubric
-                                  e.g.  [ {  "metric": "safety", "criteria": "..." }]
+                                           e.g. {"video_prompt":"...","image_prompt":"..."}        
          str experiment_name: name of the evaluation experiment
-         str evaluation_prompt: the prompt text which will be used as a prompt to evaluate the eval_metrics        
-         bool delete_experiment: delete the generated experience after the evaluation are done if True. Will save costs.
-         bool sys_metrics: calculates some mathematical metrics including perplexity, entropy if set to True.
         """
         
         #set the parameters
@@ -78,18 +66,22 @@ class PointWiseEvaluationClient:
         self.project = project   
         self.items =items  
         self.eval_metrics=eval_metrics #user defined metrics along with their rubric ratings
-        self.experiment_name=experiment_name
-        self.evaluation_prompt=evaluation_prompt
+        self.experiment_name=experiment_name      
         self.multimodal_evaluation_promt=multimodal_evaluation_promt
-        self.response_userPrompt_column_name=response_userPrompt_column_name
-        self.response_llm_model_column_name=response_llm_model_column_name
+        self.response_A_userPrompt_column_name=response_A_userPrompt_column_name
+        self.response_B_userPrompt_column_name=response_B_userPrompt_column_name
+        self.response_A_llm_model_column_name=response_A_llm_model_column_name
+        self.response_B_llm_model_column_name=response_B_llm_model_column_name        
         self.response_media_column_metadata=response_media_column_metadata
         self.response_mediaType_column_name=response_mediaType_column_name
-        self.response_desc_column_name=response_desc_column_name
-        self.delete_experiment=delete_experiment
-        self.response_avgLogprobs_column_name= response_avgLogprobs_column_name
-        self.sys_metrics=sys_metrics
+        self.response_A_desc_column_name=response_A_desc_column_name
+        self.response_B_desc_column_name=response_B_desc_column_name
+      
         self.run_experiment_name=self.experiment_name+"-"+ str(uuid.uuid4())
+
+         # Load the schema from PairWise_Schema.json
+        with open('PairWise_Schema.json') as config_file:
+            self.pairwise_schema = json.load(config_file)
         
         #initialize Vertex AI
         vertexai.init(project=self.project, location= self.location )
@@ -103,20 +95,21 @@ class PointWiseEvaluationClient:
             
         eval_dataset = pd.DataFrame(
                         {
-                            "response": self.items[self.response_desc_column_name].to_list(),
-                            "evaluation_prompt":[self.evaluation_prompt]* len(self.items),                        
+                            "response_A": self.items[self.response_A_desc_column_name].to_list(),
+                            "response_B": self.items[self.response_B_desc_column_name].to_list(),
+                                     
                             **({"mediaType": self.items[self.response_mediaType_column_name].to_list()} if 
-                               self.response_mediaType_column_name !=None else {}),   
-                            **({"avgLogprobs": self.items[self.response_avgLogprobs_column_name].to_list()} if 
-                               self.response_avgLogprobs_column_name !=None else {}),
+                               self.response_mediaType_column_name !=None else {}),
                             **({"multimodal_evaluation_promt": [
                                 self.multimodal_evaluation_promt['video_prompt'] if 'video' in str(self.items[self.response_mediaType_column_name].to_list()[i]).lower() else 
                                 self.multimodal_evaluation_promt['image_prompt'] if 'image' in str(self.items[self.response_mediaType_column_name].to_list()[i]).lower() else None
                                 for i in range(len(self.items))
                             ]} if self.response_mediaType_column_name!=None and self.multimodal_evaluation_promt!=None else {}),
                        
-                             **({"instruction": self.items[self.response_userPrompt_column_name].to_list()} if 
-                               self.response_userPrompt_column_name !=None else {}),                            
+                             **({"instruction_A": self.items[self.response_A_userPrompt_column_name].to_list()} if 
+                               self.response_A_userPrompt_column_name !=None else {}),   
+                            **({"instruction_B": self.items[self.response_B_userPrompt_column_name].to_list()} if 
+                               self.response_B_userPrompt_column_name !=None else {}),  
                             
                             "reference": [
                                         json.dumps(
@@ -142,7 +135,8 @@ class PointWiseEvaluationClient:
                                 
                                         for i in range(len(self.items))
                                     ],
-                            "response_llm_model": self.items[self.response_llm_model_column_name],
+                            "response_A_llm_model": self.items[self.response_A_llm_model_column_name],
+                            "response_B_llm_model": self.items[self.response_B_llm_model_column_name],
                             "run_experiment_name": [self.run_experiment_name] * len(self.items),
                             "run_experiment_date": [datetime.today().strftime('%Y-%m-%d')] * len(self.items),
                         }
@@ -165,7 +159,7 @@ class PointWiseEvaluationClient:
         with open('config.json') as config_file:
             config = json.load(config_file)
 
-        table_id = config['pointwise_eval_table']
+        table_id = config['pairwise_eval_table']
         dataset_id = config['eval_dataset']
         project_id = config["project"]
         location_id = config["project_location"]
@@ -237,46 +231,6 @@ class PointWiseEvaluationClient:
                     print(error)
         except Exception as e:
             print(f"An error occurred while inserting data: {e}")
-
-    def perplexity(self,prob: float):    
-        """Extract perplexity- models confidence in predicting next token using average log probablity
-
-          Args:
-          float prob: average log probability
-
-          Returns:
-          float:  perplexity value
-
-          """
-        return math.exp(-prob)
-    
-    
-    def entropy(self,text: str):
-        """Extracts entropy of a texts, higher entropy means diverse range of tokens have been choosen
-
-        Args:
-        str text: the input text
-
-        Returns:
-        float entropy: entropy value of input text
-        """
-
-        # Tokenize the text into words (ignoring punctuation)
-        words = text.lower().split()
-
-        # Get the frequency of each word
-        word_count = Counter(words)
-
-        # Total number of words
-        total_words = len(words)
-
-        # Calculate the probability of each word
-        probabilities = [count / total_words for count in word_count.values()]
-
-        # Calculate entropy using the formula
-        entrpy = -sum(p * math.log2(p) for p in probabilities)
-
-        return entrpy
     
     
     def get_autorater_response(self, metric_prompt: list, llm_model: str="gemini-1.5-pro") -> dict:
@@ -292,14 +246,7 @@ class PointWiseEvaluationClient:
         """
             
         # set evaluation metric schema
-        metric_response_schema = {
-            "type": "OBJECT",
-            "properties": {
-                "score": {"type": "NUMBER"},
-                "explanation": {"type": "STRING"},
-            },
-            "required": ["score", "explanation"],
-        }
+        metric_response_schema = self.pairwise_schema 
 
         #define a generative model as an autorator
         autorater = GenerativeModel(
@@ -343,13 +290,14 @@ class PointWiseEvaluationClient:
         dict instance: an instance of predictions that should be evaluated
        
         Returns:
-        dict : coverage evaluation
+        dict evaluation_response: scores and explanations related to the judgements for each requested metric
         """
         
         fileUri = json.loads(instance["reference"])["fileuri"]
-        eval_instruction_template =instance["multimodal_evaluation_promt"] 
-        response = instance["response"]
+        eval_instruction_template =instance["multimodal_evaluation_promt"]      
         user_prompt_instruction= instance["instruction"]
+        response_A = instance["response_A"]
+        response_B = instance["response_B"]
         
         evaluation_prompt=[]
         # set the evaluation prompt
@@ -362,8 +310,10 @@ class PointWiseEvaluationClient:
                 json.dumps(json.loads(instance["reference"])["metadata"]),  
                 "USER'S INPUT PROMPT:",
                 user_prompt_instruction,
-                "GENERATED RESPONSE: ",
-                response,
+                "GENERATED RESPONSE MODEL A: ",
+                 response_A,
+                 "GENERATED RESPONSE MODEL B: ",
+                 response_B,
             ]
         elif 'image' in instance["mediaType"]:
             # generate the evaluation prompt
@@ -373,87 +323,56 @@ class PointWiseEvaluationClient:
                 fileUri,   
                 "USER'S INPUT PROMPT:",
                 user_prompt_instruction,
-                "GENERATED RESPONSE: ",
-                response,
+                "GENERATED RESPONSE MODEL A: ",
+                 response_A,
+                 "GENERATED RESPONSE MODEL B: ",
+                 response_B,
             ]
      
         #generate evaluation response
         evaluation_response = self.get_autorater_response(evaluation_prompt)
-        return {
-           "custom_coverage":  evaluation_response.get("score", ""),
-             "explanation": evaluation_response.get("explanation", "") 
-        }
+        return evaluation_response
+
+    # Function to extract the score and explanation for each category
+    def flatten_evaluations(instance):
+        """Flattens a dict column type in a dataframe series
+        
+        Args:
+        pandas.core.series.Series instance: an instance of predictions that should be evaluated
+       
+        Returns:
+        Dataframe flattened_data: flattened data
+        """ 
+        flattened_data = {}
+        for key in self.pairwise_schema['required']:
+            flattened_data[f"{key.lower().replace(' ', '_')}_score"] = instance[key]['score']
+            flattened_data[f"{key.lower().replace(' ', '_')}_explanation"] = instance[key]['explanation']
+        
+        return flattened_data
+  
     
     def get_evaluations(self):
         """
         Extracts the evaluation metricsusing:
             1-user defined metrics and rating criteria
-            2-pre-defined mathematical metrics: perplexity, entropy
-
-        """
-        metrics=[]
-        # set evaluation data
-        eval_dataset=self.set_evaluation_data()
-        
-        #calculate the system defined metrics
-        if self.sys_metrics:
-            # the evrage prob column is given in the data, calculate perplexity
-            if self.response_avgLogprobs_column_name:
-                eval_dataset['perplexity']=eval_dataset[self.response_avgLogprobs_column_name].apply(self.perplexity)
             
-            #calculate entropy
-            eval_dataset['entropy']=eval_dataset['response'].apply(self.entropy)
-            eval_results=eval_dataset
+        """
+        # set evaluation data
+        eval_dataset=self.set_evaluation_data()       
             
         #calculate coverage metrics
         if self.multimodal_evaluation_promt:
+            #get evaluations
+            eval_dataset['custom_coverage']=eval_dataset.apply(self.custom_coverage_fn,axis=1)
+             
+            # Apply the function to flatten the 'custom_coverage' column and create new columns
+            flattened_df = eval_dataset['custom_coverage'].apply(flatten_evaluations)
+                                                                 
+            # Join the flattened columns to the original dataframe
+            eval_dataset = eval_dataset.join(pd.json_normalize(flattened_df))
+            eval_dataset = eval_dataset.drop(columns=["custom_coverage"])
             
-            #create a custome coverage metric
-            custom_coverage_metric = CustomMetric(
-                name="custom_coverage",
-                metric_function=self.custom_coverage_fn,
-            )
-            
-            metrics. append(custom_coverage_metric)
- 
-
-
-        #set user defined metrics
-        if self.eval_metrics:   
-            # Define  pointwise quality metric(s)
-            for metric in self.eval_metrics:
-                # Define a pointwise quality metric
-                pointwise_quality_metric_prompt = f"""{self.evaluation_prompt}; evaluate {metric['metric']}.
-                # Rubric rating criteria
-                {metric['criteria']}
-                # AI-generated Response
-                {{response}}
-                """
-                pointwise_metric=PointwiseMetric(
-                    metric=metric['metric'],
-                    metric_prompt_template=pointwise_quality_metric_prompt,
-                )
-                metrics.append(pointwise_metric)
-                
-        #if any metric is defined define task and extract metrics
-        if metrics:
-            # Create the evaluation task
-            eval_task = EvalTask(
-                dataset=eval_dataset,
-                metrics=metrics,
-                experiment=self.experiment_name,
-            )
-            # Run evaluation on the data using the evaluation service
-            results = eval_task.evaluate( 
-
-                    experiment_run_name=self.run_experiment_name,
-                ) 
-            #Delete the experiment after getting the result
-            if self.delete_experiment:
-                experiment = aiplatform.Experiment(self.experiment_name)
-                experiment.delete()
-                
-            eval_results=results.metrics_table
+        eval_results=eval_dataset
             
         #log the statistics into bigquery
         self.log_evaluations(eval_results)
