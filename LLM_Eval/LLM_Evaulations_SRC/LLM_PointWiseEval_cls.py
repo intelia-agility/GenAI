@@ -110,8 +110,8 @@ class PointWiseEvaluationClient:
                             **({"avgLogprobs": self.items[self.response_avgLogprobs_column_name].to_list()} if 
                                self.response_avgLogprobs_column_name !=None else {}),
                             **({"multimodal_evaluation_promt": [
-                                self.multimodal_evaluation_promt['video_prompt'] if 'video' in str(self.items[self.response_mediaType_column_name][i]).lower() else 
-                                self.multimodal_evaluation_promt['image_prompt'] if 'image' in str(self.items[self.response_mediaType_column_name][i]).lower() else None
+                                self.multimodal_evaluation_promt['video_prompt'] if 'video' in str(self.items[self.response_mediaType_column_name].to_list()[i]).lower() else 
+                                self.multimodal_evaluation_promt['image_prompt'] if 'image' in str(self.items[self.response_mediaType_column_name].to_list()[i]).lower() else None
                                 for i in range(len(self.items))
                             ]} if self.response_mediaType_column_name!=None and self.multimodal_evaluation_promt!=None else {}),
                        
@@ -121,21 +121,25 @@ class PointWiseEvaluationClient:
                             "reference": [
                                         json.dumps(
                                             {
-                                                "fileuri": self.items[self.response_media_column_metadata['fileUri']][i],
+                                                "fileuri": self.items[self.response_media_column_metadata['fileUri']].to_list()[i],
                                                 "metadata": {
                                                     "start_offset": {
-                                                        "seconds": int(self.items[self.response_media_column_metadata['startOffset']][i]),
+                                                        "seconds": int(self.items[self.response_media_column_metadata['startOffset']].to_list()[i]),
                                                         "nanos": 0,
                                                     },
                                                     "end_offset": {
-                                                        "seconds": int(self.items[self.response_media_column_metadata['endOffset']][i]),
+                                                        "seconds": int(self.items[self.response_media_column_metadata['endOffset']].to_list()[i]),
                                                         "nanos": 0,
                                                     },
                                                 } if self.response_media_column_metadata['startOffset'] in self.items.columns and 
-                                                     self.response_media_column_metadata['endOffset'] in self.items.columns else {}
+                                                     self.response_media_column_metadata['endOffset'] in self.items.columns and 
+                                                     'video' in str(self.items[self.response_mediaType_column_name].to_list()[i]).lower() 
+                                                else {}
                                             }
                                         ) if self.response_media_column_metadata is not None and 
-                                             self.response_media_column_metadata.get('fileUri') is not None else "{}"
+                                             self.response_media_column_metadata.get('fileUri') is not None 
+                                          else "{}"
+                                
                                         for i in range(len(self.items))
                                     ],
                             "response_llm_model": self.items[self.response_llm_model_column_name],
