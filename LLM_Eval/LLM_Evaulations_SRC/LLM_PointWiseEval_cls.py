@@ -104,7 +104,7 @@ class PointWiseEvaluationClient:
         eval_dataset = pd.DataFrame(
                         {
                             "response": self.items[self.response_desc_column_name].to_list(),
-                            "evaluation_prompt":[self.evaluation_prompt]* len(self.items),                           
+                            "evaluation_prompt":[self.evaluation_prompt]* len(self.items),                        
                             **({"mediaType": self.items[self.response_mediaType_column_name].to_list()} if 
                                self.response_mediaType_column_name !=None else {}),   
                             **({"avgLogprobs": self.items[self.response_avgLogprobs_column_name].to_list()} if 
@@ -349,6 +349,7 @@ class PointWiseEvaluationClient:
         fileUri = json.loads(instance["reference"])["fileuri"]
         eval_instruction_template =instance["multimodal_evaluation_promt"] 
         response = instance["response"]
+        user_prompt_instruction= instance["response"]
         
         evaluation_prompt=[]
         # set the evaluation prompt
@@ -358,7 +359,9 @@ class PointWiseEvaluationClient:
                 "VIDEO URI: ",
                 fileUri,
                 "VIDEO METADATA: ",
-                json.dumps(json.loads(instance["reference"])["metadata"]),                
+                json.dumps(json.loads(instance["reference"])["metadata"]),  
+                "USER'S INPUT PROMPT:",
+                user_prompt_instruction,
                 "GENERATED RESPONSE: ",
                 response,
             ]
@@ -367,7 +370,9 @@ class PointWiseEvaluationClient:
             evaluation_prompt = [
                 eval_instruction_template,       
                 "IMAGE URI: ",
-                fileUri,                
+                fileUri,   
+                "USER'S INPUT PROMPT:",
+                user_prompt_instruction,
                 "GENERATED RESPONSE: ",
                 response,
             ]
