@@ -65,7 +65,6 @@ class PairwiseEvaluationClient:
         self.location = location  
         self.project = project   
         self.items =items  
-        self.eval_metrics=eval_metrics #user defined metrics along with their rubric ratings
         self.experiment_name=experiment_name      
         self.multimodal_evaluation_promt=multimodal_evaluation_promt
         self.response_A_userPrompt_column_name=response_A_userPrompt_column_name
@@ -167,7 +166,7 @@ class PairwiseEvaluationClient:
         dataset_full_id = f"{project_id}.{dataset_id}"
 
         # Remove unwanted characters from column names
-        result.columns = result.columns.str.replace("/", "_")
+        result.columns = result.columns.str.replace("/", "_").str.replace(',','')
 
         # Convert all columns to string
         result = result.astype(str)
@@ -295,7 +294,8 @@ class PairwiseEvaluationClient:
         
         fileUri = json.loads(instance["reference"])["fileuri"]
         eval_instruction_template =instance["multimodal_evaluation_promt"]      
-        user_prompt_instruction= instance["instruction"]
+        user_prompt_A_instruction= instance["instruction_A"]
+        user_prompt_B_instruction= instance["instruction_B"]
         response_A = instance["response_A"]
         response_B = instance["response_B"]
         
@@ -308,8 +308,10 @@ class PairwiseEvaluationClient:
                 fileUri,
                 "VIDEO METADATA: ",
                 json.dumps(json.loads(instance["reference"])["metadata"]),  
-                "USER'S INPUT PROMPT:",
-                user_prompt_instruction,
+                "USER'S INPUT PROMPT MODEL A:",
+                user_prompt_A_instruction,
+                "USER'S INPUT PROMPT MODEL B:",
+                user_prompt_B_instruction,
                 "GENERATED RESPONSE MODEL A: ",
                  response_A,
                  "GENERATED RESPONSE MODEL B: ",
@@ -321,8 +323,10 @@ class PairwiseEvaluationClient:
                 eval_instruction_template,       
                 "IMAGE URI: ",
                 fileUri,   
-                "USER'S INPUT PROMPT:",
-                user_prompt_instruction,
+                "USER'S INPUT PROMPT MODEL A:",
+                user_prompt_A_instruction,
+                "USER'S INPUT PROMPT MODEL B:",
+                user_prompt_B_instruction,
                 "GENERATED RESPONSE MODEL A: ",
                  response_A,
                  "GENERATED RESPONSE MODEL B: ",
@@ -334,7 +338,7 @@ class PairwiseEvaluationClient:
         return evaluation_response
 
     # Function to extract the score and explanation for each category
-    def flatten_evaluations(instance):
+    def flatten_evaluations(self,instance):
         """Flattens a dict column type in a dataframe series
         
         Args:
@@ -366,7 +370,7 @@ class PairwiseEvaluationClient:
             eval_dataset['custom_coverage']=eval_dataset.apply(self.custom_coverage_fn,axis=1)
              
             # Apply the function to flatten the 'custom_coverage' column and create new columns
-            flattened_df = eval_dataset['custom_coverage'].apply(flatten_evaluations)
+            flattened_df = eval_dataset['custom_coverage'].apply(self.flatten_evaluations)
                                                                  
             # Join the flattened columns to the original dataframe
             eval_dataset = eval_dataset.join(pd.json_normalize(flattened_df))
