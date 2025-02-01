@@ -1,0 +1,117 @@
+title,content
+intelia ethos,"	
+#delightthecustomer
+
+Our customers' success is the core to our success – we deliver what we commit to with precision, innovation and care.
+
+
+	
+#proudlypassionate
+
+We spend an enormous amount of time at work – it’s important we work in an environment where we are proud of what we do, care about our delivery and enjoy ourselves. Share the passion to appreciate the opportunities that life has presented.
+
+
+	
+#onetribe
+
+We understand that so much more can be achieved as a team. Embrace each other, the diversity in our thinking, experiences, skills and culture. Celebrate the successes, laugh and support each other in the challenging times."
+Migrating Data from Legacy Enterprise Data Warehouse to Cloud Platform ,"Migrating data from a legacy on-prem data warehouse to a cloud platform involves several key steps to ensure a smooth and successful transition. Here’s a breakdown of the typical steps involved:
+
+1) Assessment:
+Evaluate your current data warehouse: Analyse its architecture, data volume, performance, and dependencies.
+Understand the data sources, data models, ETL processes, data quality, and performance issues.
+Identify any dependencies or constraints that might impact the migration process.
+2) Set Goals:
+Define your cloud migration goals: Set clear objectives for the migration, focusing on specific improvements or challenges you want to address.
+3) Select a cloud platform:
+Choose a modern cloud data platform that best suits your organisation’s needs. Consider factors like scalability, cost, security, performance and compatibility with your data and tools. Popular options include Google BigQuery, Amazon Redshift, and Snowflake. Evaluate and compare these platforms to determine the best fit for your migration.
+4) Define Migration Strategy:
+Select your migration strategy depending on your needs and complexity. This could involve “lift-and-shift” where you migrate the existing infrastructure as-is to the cloud, “re-platforming,” or “rearchitecting” where you redesign the data models and ETL processes to leverage the capabilities of the cloud data platform.
+5) Create a Migration Plan:
+Develop a detailed migration plan: This plan should outline the steps, timeline, resources, and budget required for each phase of the migration.
+6) Data Preparation and Cleansing:
+Identify and remove duplicate, incomplete, or inaccurate data: Ensure data quality and consistency before migration.
+Transform data formats: Map the data elements and entities to their corresponding counterparts in the cloud data platform. Identify any required data transformations, such as schema changes, data type conversions, or data cleansing, to ensure compatibility with the cloud platform.
+Extract the data from your on-premise data warehouse using appropriate ETL tools or scripts.
+Develop data migration tools or scripts: Automate as much of the data movement as possible for efficiency and accuracy.
+7) Set up the Cloud Data Platform:
+Set up and configure the chosen cloud data platform. Set up the necessary infrastructure, storage, and compute resources based on your data requirements. Configure the security measures, including access controls and encryption, to protect your data in the cloud environment. Prepare the cloud data platform to receive and process the migrated data.
+8) Data Migration:
+Choose data transfer methods: Select suitable methods based on the data volume, security needs, and cost considerations. Options include network transfers, cloud storage services, or specialised data migration tools.
+Load the extracted and transformed data into the cloud data platform. Use the appropriate data loading mechanisms provided by the platform, such as bulk loading or streaming. Monitor the loading process to ensure its successful completion.
+9) Modify ETL Processes:
+Adapt and modify the existing ETL processes to work with the cloud data platform. Leverage the native capabilities and tools provided by the cloud platform for efficient data integration, transformation, and orchestration. Optimise the ETL workflows to take advantage of the scalability and performance benefits offered by the cloud environment.
+10) Data Validation:
+Perform comprehensive data validation and testing to ensure the migrated data in the cloud data platform matches the expected results. Validate the data consistency, integrity, and accuracy across various data dimensions. Conduct performance testing to ensure the new cloud data platform meets the desired performance benchmarks.
+11) Cut over and Decommission:
+Once the data migration is complete, plan the cut-over from the on-premise data warehouse to the cloud data platform. Redirect the necessary applications and processes to start utilising the migrated data in the cloud. Decommission the on-premise data warehouse, ensuring proper backup and archiving of the data as per compliance requirements.
+12) Post-Migration Testing:
+Perform comprehensive testing: Test data access, functionality, and performance in the cloud environment.
+Optimise resource utilisation: Configure your cloud environment for optimal performance and cost efficiency.
+Monitor and maintain: Continuously monitor performance, implement necessary security measures, and adjust the cloud environment as needed.
+Additional Considerations:
+Security and compliance: Ensure data security and adhere to relevant regulations throughout the migration process.
+Change management: Communicate effectively with stakeholders and provide training to manage expectations and adoption.
+Cost optimisation: Monitor and manage cloud costs effectively to stay within the budget.
+Conclusion:
+By following these steps and considering the additional points, you can increase your chances of a successful and efficient data migration from your legacy warehouse to the cloud platform.
+
+intelia are experts in all things data, including migrations so reach out to us if you would like to find out more about how we can help you in this space."
+Data is at our core. It's what we're passionate about. It's fundamental to who we are. It's why we're here.,"intelia was founded in 2018, with a desire to create a truly unique approach to helping our customers to accelerate the opportunities, commercial benefits and competitive advantage that can be unlocked in a data-driven world.
+We take your success personally so no matter where you’re starting from, what your challenges are or what opportunities you’re trying to take advantage of, we dig in, we partner with you and we make it work together."
+intelia has a unique technology partner ecosystem ,"In an increasingly fast-paced and competitive world, with industry disruption at unprecedented levels, more and more leaders understand the critical importance of transforming their business to move at speed in order to innovate, stay relevant, meet (or create) customer needs and drive genuine business value.
+
+intelia is a Google Cloud Premier Partner with a certified specialisations in machine learning and data analytics, proudly providing a large team of certified technology strategists, architects, engineers and experienced delivery professionals who can fast-track your GCP cloud transformation. We can help you harness the power of GCP to establish cloud at the core of your business, enabling you to supercharge your compute, application, data & advanced analytics capabilities.
+
+While GCP could be considered relatively new in the Australian market (with Google only actively selling in Australia over the past few years), by no means is it lacking in global reach, maturity, capability, capacity, power or breadth and depth of solutions comprising everything you need to build, operate and scale your business solutions.
+
+In fact, it is the same underlying technology that has supported and driven the massive global reach and growth of Google and their huge range of products and services (including the brains behind their ubiquitous email and search platforms, YouTube, Google Maps and many others).
+Snowflake - The cloud data platform built for any user, anywhere
+The value of Snowflake for business
+Snowflake combines the power of data warehousing, the flexibility of big data platforms and the elasticity of the cloud at a fraction of the cost of traditional solutions.
+
+Snowflake is a cloud-first data warehouse built from the ground up for the cloud and for today’s data and analytics landscape. It takes the complexity out of running a data warehouse whilst providing significant performance and cost advantages over traditional data warehousing solutions.
+
+The Snowflake architecture allows storage and compute to scale independently, so customers can use and pay for storage and computation separately. The sharing functionality makes it easy for organisations to quickly share governed and secure data in real time.
+
+Why do businesses want to move to Snowflake Data Cloud Platform?
+Snowflake enables the business to:
+
+Invest their focus on data by just simply loading data to Snowflake; it is ready to consume with no additional overhead like traditional data platforms.
+Share live data securely across your organisation or to external organisations, in a simple yet powerful SQL interface.
+Reassuring query performance across workloads, unrivalled by existing on-premise data warehouse solutions.
+No matter how big or small your organisation is, no matter how progressed you are in your current cloud journey, we can help you plan your cloud (or multi-cloud) strategy, discuss and solve your cloud challenges / constraints, and determine and implement the right solutions to get your business to where it needs to be.
+
+As your trusted partner, intelia will help tackle your most important initiatives to enable you to focus on what matters most – your operation, your customer needs and increasing business value.
+
+We engage directly with organisations looking to use GCP and are an authorised reseller with access to significant product discounts.
+
+Please reach out if you’re looking to set up a GCP billing relationship or have an existing one you’re looking to review."
+? Celebrating Excellence at intelia! ?,"ast night, we came together as hashtag#onetribe to recognise and celebrate the incredible achievements of our team at intelia’s Half-Yearly Awards Night. ??
+ 
+These awards reflect the passion, innovation, and dedication our consultants bring to their work every day to make a real impact for our customers.
+ 
+A huge congratulations to our well-deserved award winners in the categories of:
+
+?? Delivery Excellence
+?? Engineering Excellence
+?? hashtag#DelightTheCustomer
+?? hashtag#OneTribe
+?? hashtag#ConstantlyEvolve
+ 
+We also had the opportunity to gain valuable insights during a fireside chat with our CEO & Director that covered , sparking inspiring conversations about the future of intelia and the ever-evolving AI & data landscape. A big thank you to everyone who made the night special—We can’t wait to see what the next half of the year brings! ??
+hashtag#AwardsNight hashtag#Teamwork hashtag#Innovation hashtag#Excellence"
+Direnc Uysal's linked-in post,"Amidst the excitement surrounding Generative AI and the widespread adoption of Machine Learning solutions in businesses, the significance of data governance has surged.
+
+A data solution without governance is very unlikely to succeed - while functionality may be delivered initially, the ability to share, collaborate on, manage ongoing and ensure compliance will be hindered and likely result in significant changes being required down the line.
+
+hashtag#DataGovernance hashtag#DataDriven hashtag#EnterpriseDataPlatforms hashtag#DataManagement hashtag#intelia hashtag#TechLeadership"
+intelia's post on 22rd december,"As 2024 comes to a close, the intelia hashtag#onetribe came together last week for a wonderful End-of-Year Celebration — a night filled with laughter, connection, and reflection on a year of fantastic growth and success.
+ 
+From groundbreaking projects to new partnerships and milestones, 2024 showed us what’s possible through teamwork, passion, and perseverance. This celebration was a moment to recognise each other’s contributions and toast to the incredible journey we've shared.
+ 
+We’re beyond proud of what we’ve achieved together and can’t wait to see what 2025 has in store!
+ 
+Here’s to growth, innovation, and shared success in the year ahead. ??
+
+hashtag#constantlyevolve hashtag#proudlypassionate hashtag#delightthecustomer"
