@@ -1,0 +1,70 @@
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          - projectId: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - region: "us-central1"
+          - imageUri: ${region + "-docker.pkg.dev/" + projectId + "/ninebatchcontainer/batch-chunk-and-embedding:v1.00"}
+          - jobId: ${"job-primegen-" + string(int(sys.now()))}
+          - bucket: ${projectId + "-" + jobId}
+    - createBucket:
+        call: googleapis.storage.v1.buckets.insert
+        args:
+          query:
+            project: ${projectId}
+          body:
+            name: ${bucket}
+    - logCreateBucket:
+        call: sys.log
+        args:
+          data: ${"Created bucket " + bucket}
+    - logCreateBatchJob:
+        call: sys.log
+        args:
+          data: ${"Creating and running the batch job " + jobId}
+    - createAndRunBatchJob:
+        call: googleapis.batch.v1.projects.locations.jobs.create
+        args:
+            parent: ${"projects/" + projectId + "/locations/" + region}
+            jobId: ${jobId}
+            body:
+              taskGroups:
+                taskSpec:
+                  runnables:
+                    - container:
+                        imageUri: ${imageUri}
+                      environment:
+                        variables:
+                          PROJECT_ID: ${projectId}
+                          DATASET: "my_langchain_dataset"
+                          TABLE: "doc_and_vectors"
+                          REGION: ${region}
+                          META_DATA_COLUMNS: "id"
+                          PAGE_CONTENT_COLUMNS: "content,media_type,test_metadata"
+                          SOURCE_QUERY_STR:  "SELECT id,media_type,content,test_metadata  FROM `nine-quality-test.Nine_Quality_Test.content_embeddings` ;"
+                          SEPARATORS: "\n\n"
+                          CHUNK_SIZE: "50"
+                          CHUNK_OVERLAP: "5"
+
+                # Run 6 tasks on 2 VMs
+                taskCount: 6
+                parallelism: 2
+              logsPolicy:
+                destination: CLOUD_LOGGING
+        result: createAndRunBatchJobResponse
+    # You can delete the batch job or keep it for debugging
+    - logDeleteBatchJob:
+        call: sys.log
+        args:
+          data: ${"Deleting the batch job " + jobId}
+    - deleteBatchJob:
+        call: googleapis.batch.v1.projects.locations.jobs.get
+        args:
+            name: ${"projects/" + projectId + "/locations/" + region + "/jobs/" + jobId}
+        result: deleteResult
+    - returnResult:
+        return:
+          jobId: ${jobId}
+          bucket: ${bucket}
+          s: ${deleteResult}

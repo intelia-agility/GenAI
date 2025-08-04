@@ -1,0 +1,11 @@
+VAR_SOURCE_BUCKET: "raw_nine_files"
+VAR_DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"
+VAR_SOURCE_IMAGE_FOLDER:   "2024"  
+VAR_IMAGE_PROMPT_TEXT: "Describe this image in detail. If there is a text in the image mention that. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\ Give me at least 1500 words describing it. If you are not sure about any info, please do not make it up. Do not add any extra text to the output"
+      
+VAR_TEMPERATURE: 0.5 
+VAR_MAX_OUT_TOKENS: 2048 # can go up to 8192
+VAR_TOP_P: 0.8
+VAR_TOP_K: 40 
+VAR_MAX_REQUEST_PER_FILE: 25000 # up to 30000 max
+VAR_MEDIA_TYPES: "image/jpeg,image/png" #comma separated string

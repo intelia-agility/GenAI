@@ -1,0 +1,7 @@
+{ 
+    "eval_dataset": "vlt_eval_statistics_schema",
+    "pointwise_eval_table":"vlt_pointwise_eval_statistics",
+    "pairwise_eval_table":"vlt_pairwise_eval_statistics",
+    "project": "nine-quality-test",
+    "project_location": "us-central1"  
+}

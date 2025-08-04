@@ -1,0 +1,42 @@
+# This is a sample workflow to test or replace with your source code.
+#
+# This workflow passes the region where the workflow is deployed
+# to the Wikipedia API and returns a list of related Wikipedia articles.
+# A region is retrieved from the GOOGLE_CLOUD_LOCATION system variable
+# unless you input your own search term; for example, {"searchTerm": "asia"}.
+main:
+    params: [input]
+    steps:
+        - init:
+            assign:
+                - JOB_ID: ${input.job_id}
+                - PROJECT: ${input.project}
+                - LOCATION:  ${input.location}
+
+        #Step 1: Get job state
+        - get_bigquery_load_job_status:
+            call: googleapis.bigquery.v2.jobs.get
+            args:
+                 jobId: ${JOB_ID}
+                 projectId:  ${PROJECT}
+                 location:  ${LOCATION} 
+            result: load_job_result
+
+        # Step 2: check the if load is done sucessfully for all jobs, otherwise exit
+        - checkIfLoadDone: 
+                        switch:
+                              - condition: ${load_job_result.status.state=="DONE" and "errors" in load_job_result.status}
+                                steps:
+                                    - return_load_failure:                                        
+                                        return: {"state": "JOB_FAILED"}
+
+                              - condition:  ${load_job_result.status.state in ["PENDING", "RUNNING","STATE_UNSTARTED"] and  not( "errors" in load_job_result.status)}
+                                steps:
+                                    - bg_load_wait:
+                                        call: sys.sleep
+                                        args:
+                                            seconds: 1
+                                        next: get_bigquery_load_job_status  
+
+        - returnOutput:
+                    return: {"state": "JOB_SUCCESS"}

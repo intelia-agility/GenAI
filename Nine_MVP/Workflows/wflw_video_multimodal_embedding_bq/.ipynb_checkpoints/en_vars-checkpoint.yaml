@@ -1,0 +1,8 @@
+VAR_SOURCE_BUCKET: "raw_nine_files"
+VAR_SOURCE_VIDEO_FOLDER: "vlt_video_extract/OTHERS"   
+VAR_BATCH_SIZE: 10000 # up to 25000 max
+VAR_MEDIA_TYPES:   "video/mp4" #comma separated string 
+VAR_SEGMENT_LENGTH: 120 # seconds ( shouldnt be more thatn 2 minutes)
+VAR_INTERVALS: 120 # seconds ( could be 16 seconds - shouldnt be more thatn 2 minutes)
+VAR_IGNORE_PROCESSED_MEDIA_FLAG: 1 # 1: just create batch request for the video segments that are not processed or had error , 0: create batch request for all the video segments
+

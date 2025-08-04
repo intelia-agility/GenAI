@@ -1,0 +1,18 @@
+VAR_SOURCE_BUCKET: "raw_nine_files"
+VAR_DESTINATION_BUCKET: "artifacts-nine-quality-test-embeddings"
+VAR_SOURCE_IMAGE_FOLDER:   "2024"  
+VAR_IMAGE_PROMPT_TEXT: "Describe this image in detail. Identify any text, brands or company logos, locations and key themes. If there is a famous person like politician, celebrity or athlete, indicate their name and describe what they are famous for.\ Organize the description in the following format:
+                       \n**DetailedDescription**\n
+                       \n**BrandsCompanyNamesLogos**\n
+                       \n**KeyLocations**\n
+                       \n**KeyThemes**\n
+                       \n**PeopleAppearing**\n
+If you are not sure about any info, please do not make it up. No greetings, closing remarks, or additional comments."
+VAR_TEMPERATURE: 0.5 
+VAR_MAX_OUT_TOKENS: 2048 # can go up to 8192
+VAR_TOP_P: 0.8
+VAR_TOP_K: 40 
+VAR_MAX_REQUEST_PER_FILE: 25000 # up to 30000 max
+VAR_MEDIA_TYPES: "image/jpeg,image/png" #comma separated string
+VAR_SECONDPROJECTID: "nine-quality-test" #THIS IS THE NON-FILTERED PROJECT
+VAR_IGNORE_PROCESSED_MEDIA_FLAG: 1 # 1: just create batch request for the images that are not processed or had error , 0: create batch request for all the images

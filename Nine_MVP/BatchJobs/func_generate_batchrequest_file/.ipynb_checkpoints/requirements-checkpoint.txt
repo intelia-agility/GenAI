@@ -1,0 +1,12 @@
+functions-framework==3.*
+flask
+google-cloud-storage
+gcsfs
+google-cloud
+google-cloud-bigquery
+pymediainfo
+mediainfo 
+pydantic
+pandas
+
+ 

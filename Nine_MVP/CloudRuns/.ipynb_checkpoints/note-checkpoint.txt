@@ -1,0 +1,28 @@
+ 
+  step 1:
+  
+  gcloud artifacts repositories create vlt-video-duration-docker \
+    --repository-format=docker \
+    --location=us-central1
+	
+	
+	
+  step 2:
+  
+  gcloud builds submit --config cloudbuild.yaml .
+  
+  
+  gcloud run deploy getvideodurationservice\
+  --image us-central1-docker.pkg.dev/nine-quality-test/vlt-video-duration-docker/get-video-duration:v1.00 \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --memory 512Mi \
+  --cpu 1
+  
+  
+  step 3:	
+	curl -X POST "https://getvideodurationservice-494586852359.us-central1.run.app/get-video-duration" -H "Content-Type: application/json" -d '{"url": "gs://raw_nine_files/vlt_video_extract/OTHERS/splitProcessOutput_vlt_video_extract_MAAT_Full_MAAT2023_10_A_HBB_360p_split2.mp4"}'
+	
+	
+	 

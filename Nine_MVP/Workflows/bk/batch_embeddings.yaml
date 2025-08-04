@@ -1,0 +1,49 @@
+main:
+  params: [input]
+
+  steps:
+    # Step 1: Retrieve the bucket name from an environment variable
+    - init:
+        assign:
+            - project: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - location: "us-central1"
+            - content_model: "gemini-1.0-pro-vision"
+            - content_method: "batchPredictionJobs" 
+            - content_llm_api_endpoint: ${"https://" + location + "-aiplatform.googleapis.com" + "/v1/projects/" + project + "/locations/" + location + "/publishers/google/models/" + content_method}
+            - content_llm_api_endpoint: ${"https://" + location + "-aiplatform.googleapis.com" + "/v1/projects/" + project + "/locations/" + location + "/"+content_method}
+            - bg_dest: ${"bq://"+project+".my_langchain_dataset.doc_and_vectors1"}
+            - text_combined: ""
+            - imagecontents: []
+            - SOURCE_BUCKET: ${sys.get_env("SOURCE_BUCKET_NAME")}
+        # Step 4: extract image contents                             
+    - extract_image_contents:        
+                steps:
+                    - ask_llm:
+                        call: http.post
+                        args:
+                            url: ${content_llm_api_endpoint}
+                            auth:
+                                type: OAuth2
+                            body:
+                               
+                                displayName: "text_embedding_batch"
+                                model: "publishers/google/models/textembedding-gecko"
+                                inputConfig: {
+                                        instancesFormat:"bigquery",
+                                        bigquerySource:{  
+                                                "inputUri" : "${bg_dest}"
+                                                 }
+                                            }
+                                 
+                                outputConfig: {
+                                        predictionsFormat:"bigquery",
+                                        bigqueryDestination:{
+                                               outputUri: "${bg_dest}"
+
+                                              }
+                                          }
+
+                        result: llm_response 
+    - return_result:
+        return: ${llm_response}   
+

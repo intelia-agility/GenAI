@@ -1,0 +1,23 @@
+to build a artifact repository:
+
+gcloud artifacts repositories create ninebatchcontainer \
+    --repository-format=docker \
+    --location=us-central1
+	
+to build container image:
+
+gcloud builds submit \
+  -t us-central1-docker.pkg.dev/nine-quality-test/ninebatchcontainer/batch-chunk-and-embedding:v1.00  BatchJobs/
+  
+
+my references:
+
+https://cloud.google.com/workflows/docs/tutorials/batch-and-workflows#gcloud_1
+https://medium.com/vida-engineering/how-to-run-python-scripts-with-gcp-batch-37c53837d019
+https://medium.com/google-cloud/how-to-run-batch-data-jobs-with-gcp-batch-and-cloud-workflows-102b6545ee3e
+
+
+to call it in workflow
+
+https://cloud.google.com/workflows/docs/tutorials/batch-and-workflows#gcloud_1
+

@@ -1,0 +1,305 @@
+### This is the workflow to extract multimodal embeddings from video
+
+main:
+  #params: [input]
+
+  steps:
+    # Step 1: Initialize variables
+    - init:
+        assign:
+            - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+            - PROJECT_NUMBER : ${sys.get_env("GOOGLE_CLOUD_PROJECT_NUMBER") }
+            - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}
+            - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")}
+
+            - CONTENT_MODEL: "gemini-1.5-pro-002"  
+            - CONTENT_METHOD: "generateContent" 
+            - CONTENT_LLM_ENDPOINT: ${"https://"+  LOCATION +"-aiplatform.googleapis.com/v1beta1/projects/"  + PROJECT+"/locations/" + LOCATION + "/publishers/google/models/"+ CONTENT_MODEL + ":" + CONTENT_METHOD}
+             
+            - MEDIA_TYPES: ["video/mp4"]   
+            - FUNC_GET_VIDEO_DURATION_ENDPOINT: ${"https://getvideodurationservice-"+PROJECT_NUMBER+".us-central1.run.app/get-video-duration"}
+            
+            - SOURCE_VIDEO_FOLDER: "vlt_video_extract/OTHERS"
+            - SEGMENT_LENGTH: 120
+            - VIDEO_INTERVALS : 120
+            - NO_OF_CONCURRENT_EXECUSTIONS: 10
+            #- API_VIDEO_PER_SECOND: 5
+            - SLEEP_BETWEEN_VIDEOS: 120 # ${int(NO_OF_CONCURRENT_EXECUSTIONS) / int(API_VIDEO_PER_SECOND)}
+            - SLEEP_BETWEEN_SEGMENTS: 30
+            - TEMPERATURE: 0.5
+            - MAX_OUT_TOKENS: 8192
+            - TOP_P: 0.8
+            - TOP_K: 40
+
+
+            - VIDEO_CONTENT_FOLDER: "video_batch_prediction_fldr_out" #main folder name 
+            - VIDEO_CONTENT_FOLDER_JOB: ${"video_batch_prediction_"+  time.format( sys.now())} #this execution folder name
+            - OUTPUT_FILE_NAME: "video_batch_prediction"
+            - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+VIDEO_CONTENT_FOLDER+"/"+VIDEO_CONTENT_FOLDER_JOB}  
+            
+            - CACHE_EXPIRY_TIME: ${ time.format( sys.now()+  172800)}  #2DAYS     
+            - CACHE_MODEL : ${"projects/"+PROJECT+"/locations/"+LOCATION+"/"+ "/publishers/google/models/gemini-1.5-pro-002"}
+            - CACHED_CONTENT_ENDPOINT: ${"https://"+ LOCATION +"-aiplatform.googleapis.com/v1beta1/projects/"+ PROJECT+"/locations/"+LOCATION+"/cachedContents"}
+
+
+         
+
+     
+    
+    # Step 2: List objects in the GCS bucket
+    - list_files:
+        call: googleapis.storage.v1.objects.list
+        args:
+          bucket: ${SOURCE_BUCKET}
+          prefix: ${SOURCE_VIDEO_FOLDER}
+        result: list_result
+
+    - log_list_files:
+            call: sys.log
+            args:
+                text: "List Of files Loaded From GCP Storage"
+
+  
+    # Step 3: Filter only videos    
+    - filter_medias:
+        steps:
+          - assignList:
+              assign:
+                  - media_types: ${MEDIA_TYPES}
+                  - filetered_files: []
+          - loopList:
+              for:
+                  value: item
+                  in: ${list_result.items}
+                  steps:
+                      - check_matching: 
+                          switch:                        
+                            - condition: ${item.contentType in media_types}  
+                              steps:
+                                        - add_matching_item_to_filetered_list:
+                                            assign:                                             
+                                                - video_uri: ${"gs://"+SOURCE_BUCKET+"/"+item.name}                                                                                    
+                                                - length:  ${len(text.split(item.name, "/"))}    
+                                                - video_name: ${text.split(item.name, "/")[length-1]}  
+                                                - video_name: ${text.replace_all(video_name, ".mp4","") }                                           
+                                                - video_uri_map: {"gcs_uri": "${video_uri}", "mime_type": "${item.contentType}", "video_name": "${video_name}"}                                          
+                                                - filetered_files: ${list.concat(filetered_files,video_uri_map)}
+    
+  
+    - log_filter_medias:
+            call: sys.log
+            args:
+                text: ${"Medias Are Filtered-" + string(len(filetered_files))}
+
+    # Step 4: extract video embeddings                             
+    - extract_video_mm_embeddings:
+        parallel:
+           # shared: [LST_OUTPUT]
+            concurrency_limit: ${NO_OF_CONCURRENT_EXECUSTIONS}
+            for:
+                value: item
+                in: ${filetered_files}
+                steps:
+                    #Step 5: Get video duration
+                    - get_video_duration:
+                        call: http.post
+                        args:
+                            url: ${FUNC_GET_VIDEO_DURATION_ENDPOINT}
+                            headers:
+                                Content-Type: "application/json"
+                            body:
+                                url: ${item.gcs_uri}
+
+                        result:  video_duration_result
+
+                    - log_get_video_duration:
+                            call: sys.log
+                            args:
+                               text: ${"Extracted Video Duration - " + item.gcs_uri} 
+
+                    - create_media_context_cache:  
+                                call: http.post
+                                args:
+                                    url: ${CACHED_CONTENT_ENDPOINT}
+                                    auth:
+                                        type: OAuth2
+                                    body:
+
+                                        "model":  ${CACHE_MODEL}
+                                        "contents": [{
+                                            "role": "user",
+                                            "parts": [{
+                                                "fileData": {
+                                                "mimeType": "${item.mime_type}",
+                                                "fileUri":  "${item.gcs_uri}"
+                                                }
+
+                                            }]
+                                        },
+                                        {
+                                            "role": "model",
+                                            "parts": [{
+                                                "text": "Use this video to answer users questions."
+                                            }]
+                                        }]  
+                                        # "ttl": {
+                                        #         "seconds":"3600",
+                                        #         "nanos":"0"
+                                        #         } 
+                                        expireTime: "${CACHE_EXPIRY_TIME}"
+                                result: llm_cache_response  
+                    
+                    - log_context_cache:
+                            call: sys.log
+                            args:
+                               text: ${"Context Cache Created - " + item.gcs_uri} 
+
+                        
+                    #Step 6: Initialize vars
+                    - set_vars:
+                        assign:
+                            - prev: 0                           
+                            - video_duration: ${video_duration_result.body.duration}
+                            - video_gcs_uri: ${item.gcs_uri}
+                  
+
+                    #Step 7: Loop over segments and call multimodal embeddings for each
+                    - loop_over_video_segments:
+                        steps:
+                            #Step 7-1: initialize loop variables 
+                            - init_vars:
+                                assign:                                  
+                                      - startOffset: ${prev}
+                                      - endOffset:  ${prev+SEGMENT_LENGTH}
+                                      - segment_prompt: ${"describe what is happening in this video in the given time frame from offeset" + string(startOffset) + "second to offset " + string(endOffset) + "second in details and what people are talking about."}
+
+                            #Step 7-2: If end offset is exceeding video duration, set it to video duration
+                            - check_endOffset:
+                                 switch:
+                                    - condition: ${endOffset >video_duration}
+                                      steps:
+                                            - set_endoffset_to_max_duration:  
+                                                assign:
+                                                    - endOffset : ${video_duration}
+
+ 
+
+                            #Step 7-3: Call content embedding
+                            - ask_llm:
+                                call: http.post
+                                args:
+                                    url: ${CONTENT_LLM_ENDPOINT}
+                                    auth:
+                                        type: OAuth2
+                                    body:
+                                       
+                                        {
+                                            
+                                                "contents": [
+                                                    {
+                                                    "role": user,
+                                                    "parts": [
+                                                        {
+                                                    
+                                                        
+                                                        "fileData": {
+                                                            "mimeType":  "${item.mime_type}",
+                                                            "fileUri": "${item.gcs_uri}" ,
+                                                             "videoMetadata": {
+                                                                        "startOffset": {
+                                                                        "seconds":  "${startOffset}",
+                                                                        "nanos": 0
+                                                                        },
+                                                                        "endOffset": {
+                                                                        "seconds": "${endOffset}",
+                                                                        "nanos": 0
+                                                                        }
+                                                                  }
+                                                        } 
+                                                        },
+                                                        { "text": "${segment_prompt}" }
+                                                    ]
+                                                    }
+                                                ] ,
+                                                
+                                                "safetySettings": [
+                                                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                                                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                                                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                                                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                                                ],
+                                                "generationConfig": {
+                                                    "temperature": "${TEMPERATURE}",
+                                                    "topP": "${TOP_P}",
+                                                    "topK": "${TOP_K}",                                              
+                                                    "maxOutputTokens": "${MAX_OUT_TOKENS}",
+                                                },
+
+                                                ,"cachedContent": "${llm_cache_response.body.name}"
+                                            
+                                                }                                    
+                                result: llm_response    
+
+                            - log_llm_output:
+                                call: sys.log
+                                args:
+                                   text: ${"Content Generated - " + video_gcs_uri}                    
+
+                            # Step 7-4: Write the output into GCS
+                            - write_to_gcs:
+                                call: http.post
+                                args:
+                                    url: ${"https://storage.googleapis.com/upload/storage/v1/b/" + DESTINATION_BUCKET + "/o"}
+                                    auth:
+                                        type: OAuth2
+                                    query:                                   
+
+                                        name: ${VIDEO_CONTENT_FOLDER+"/"+VIDEO_CONTENT_FOLDER_JOB+"/"+item.video_name+"/"+OUTPUT_FILE_NAME +"_"+"seg "+string(startOffset)+"_to_"+string(endOffset)+".json"}
+                                    body:
+                                        {           "startOffsetSec": "${startOffset}",
+                                                    "endOffsetSec": "${endOffset}",
+                                                    "duration": "${video_duration}",
+                                                    "gcs_uri": "${item.gcs_uri}",                                         
+                                                    "llm_response": "${llm_response.body}",                                                   
+                                                    "cacheUsageMetadata": "${llm_cache_response.body.usageMetadata}"
+                                                     }
+
+                            - log_write_into_gcs:
+                                call: sys.log
+                                args:
+                                   text: ${"Conetnt Moved to gcs - " + video_gcs_uri+ ", From "+ string(startOffset) +" to "+string(endOffset) }   
+                                   
+                            # Step 7-5: Initialize vars to move to next segment
+                            - assign_vars_move_next_segment:  
+                                    assign:                                
+                                      - prev: ${endOffset}
+
+                            # Step 7-6: Check if there is any further segments left, if yes loop again 
+                            - check_endOffset_move_next_segment:
+                                 switch:
+                                    - condition: ${endOffset <video_duration}
+                                      next: loop_over_video_segments
+
+                            # Step 7-7: We can not constantly call the enpoint, wait after each call
+                            - wait_between_segments:
+                                    call: sys.sleep
+                                    args:
+                                        seconds: ${SLEEP_BETWEEN_SEGMENTS}
+
+                    - log_move_to_next_video:
+                            call: sys.log
+                            args:
+                               text: ${"Embedding Is Calculated For - " + video_gcs_uri} 
+
+                     # Step 8: We can not constantly call the enpoint, wait after each call
+                    - wait_between_videos:
+                            call: sys.sleep
+                            args:
+                                seconds: ${SLEEP_BETWEEN_VIDEOS}
+        
+    # Step 10: Return output
+    - return_result:
+        return: [ {"status": "SUCCESS", "output_directory": "${OUTPUT_DIRECTORY}" }]
+   
+ 

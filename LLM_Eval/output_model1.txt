@@ -1,0 +1,19 @@
+
+{
+  "Category": "TV Show",
+  "DetailedDescriptionOfEventsAndConversations": "The video begins with Jayden, a 26-year-old professional kickboxer from Queensland, arriving at a gathering. He greets Tim, Richard, and John. Richard introduces himself to Jayden. Richard asks Jayden what he does for a living. Jayden says that kickboxing is his full-time job, training twice a day, six days a week. Jayden explains that he's not what he appears to be, enjoying snuggles and back tickles when he's not fighting. He adds that he's a romantic and doesn't have a specific type, looking for someone with a good heart. Lucinda, a 43-year-old MC and wedding celebrant from New South Wales, arrives at the same gathering, greeting the other women: Tori and Natasha. Lucinda says that she's looking for a confident man, a great cook who is funny and generous of spirit. She unfolds a scroll, revealing her detailed list of desired qualities in a partner, including “handsome” and “spunky,” prompting laughter from her companions. The next scene shows Lucinda conversing with John Aiken. Lucinda says she wants someone who's good with his clothes off, leading to a humorous exchange about “high-functioning erection.”  The scene shifts back to the gathering, where Lucinda discusses her ideal partner with Tori and Natasha. She mentions wanting someone well-established, secure, and confident without a big ego, while Tori expresses her desire for a nerdy guy. Lucinda notes Tori's intellectual nature and need for a challenging partner.  The conversation then shifts to discussing what they've written on their lists, with Lucinda noting “purple” as the color of transcendence, eliciting laughter. Sara, a 29-year-old nutritionist from New South Wales, arrives. She expresses her hopes of walking down the aisle and meeting her future husband.  The video then cuts to another man arriving in a car at the same location. The Sydney skyline is visible in the background. The video then cuts to Sara, a 29-year-old nutritionist from New South Wales, arriving and meeting several other women. It ends with another male arrival at the party.",
+  "BrandsCompanyNamesLogos": ["Fiji"],
+  "KeyLocationsAndScenes": ["Sydney Harbour", "Gathering venue", "Boxing gym", "Beach", "Interview room"],
+  "KeyThemes": ["Dating", "Marriage", "Relationships", "First impressions", "Expectations"],
+  "PeopleAppearingAndMentioned": [
+    "Jayden, 26, Professional kickboxer, Queensland",
+    "Tim",
+    "Richard",
+    "John",
+    "Lucinda, 43, MC and Wedding Celebrant, New South Wales",
+    "John Aiken",
+    "Tori",
+    "Natasha",
+    "Sara, 29, Nutritionist, New South Wales"
+  ]
+}

@@ -1,0 +1,9 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/nine-quality-test/vlt-chunk-bq-content-docker/chunk-bq-content:v1.00', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/nine-quality-test/vlt-chunk-bq-content-docker/chunk-bq-content:v1.00']
+
+images:
+  - 'us-central1-docker.pkg.dev/nine-quality-test/vlt-chunk-bq-content-docker/chunk-bq-content:v1.00'

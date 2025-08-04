@@ -1,0 +1,112 @@
+main:
+  params: [input]
+
+  steps:
+    # Step 1: Retrieve the bucket name from an environment variable
+    - init:
+        assign:
+            - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+            - CONTENT_METHOD: "batchPredictionJobs" 
+            - LLM_API_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/"+CONTENT_METHOD}
+            - BIGQUERY_TABLE: ${"bq://"+PROJECT+".langchain_dataset.chucked_data"}
+            - TEXT_EMBEDDING_MODEL: "publishers/google/models/textembedding-gecko"
+			
+            - DATASET_ID: "langchain_dataset"
+            - TABLE: "chucked_data"
+            - METADATA_COLUMNS: "id,content,path,media_type,test_metadata"
+            - PAGE_CONTENT_COLUMNS: "content,test_metadata"
+            - SOURCE_QUERY: "SELECT id,media_type,content,test_metadata, path  FROM `nine-quality-test.Nine_Quality_Test.test_long_artcles` ;" 
+            - FUNC_CHUNK_BG_CONTENT: "https://us-central1-nine-quality-test.cloudfunctions.net/func_chunk_bq_content"
+            #- SEPARATORS: "\n"
+            - CHUNK_SIZE: 500
+            - CHUNK_OVERLAP: 10
+
+            - llm_response: ""
+  
+    
+    #Step 1: Chunck content and load them into big query table
+
+    - chunk_bq_content:
+        call: http.post
+        args:
+            url: ${FUNC_CHUNK_BG_CONTENT}
+            query:
+                name: "CHUNK CONTENT"            
+                project_id: ${PROJECT}
+                dataset: ${DATASET_ID}
+                table: ${TABLE} 
+                region:  ${LOCATION}              
+                metadata_columns:  ${METADATA_COLUMNS}
+                page_content_columns: ${PAGE_CONTENT_COLUMNS}
+                source_query_str: ${SOURCE_QUERY}
+                #separators: ${SEPARATORS}    #we use Langchain's defualt separators        
+                chunk_size: ${CHUNK_SIZE}
+                chunk_overlap: ${CHUNK_OVERLAP}
+        result:  result_set
+
+    #Step 2: Check if any table is created
+    - if_data_is_created:
+            switch:
+                - condition: ${ result_set.body.count_of_tables>=1}
+                  steps:
+                        - is_created:   
+                            next: log_chunking
+                - condition: ${result_set.body.count_of_tables==0}
+                  steps:
+                        - not_created:   
+                            return: "No table is created-Check the source bigquery table"
+
+
+    - log_chunking:
+        call: sys.log
+        args:
+          text: ${"Data Is Chunked - " + "Count of Created Tables "+ string(result_set.body.count_of_tables)}
+    
+
+
+
+    #Step 3: Loop over created tables and send batch requests
+    # each table can only be 30,000 request
+    - loop_over_request_files:
+        for:
+           value: version
+           range: ${[0, result_set.body.count_of_tables-1]}
+           steps:
+                 #Step 4: Set the big query table 
+                - set_table_name:
+                    assign:
+                        - table_name: ${result_set.body.table_name_prefix+ string(version)}
+                        - BIGQUERY_TABLE: ${"bq://"+PROJECT+".langchain_dataset.chucked_data"}
+  
+                - extract_embeddings:        
+                            steps:
+                                - ask_llm:
+                                    call: http.post
+                                    args:
+                                        url: ${LLM_API_ENDPOINT}
+                                        auth:
+                                            type: OAuth2
+                                        body:
+                                        
+                                            displayName: "TEXT_EMBEDDING_BATCH_JOB"
+                                            model: ${TEXT_EMBEDDING_MODEL}
+                                            inputConfig: {
+                                                    instancesFormat:"bigquery",
+                                                    bigquerySource:{  
+                                                            "inputUri" : "${BIGQUERY_TABLE}"
+                                                            }
+                                                        }
+                                            
+                                            outputConfig: {
+                                                    predictionsFormat:"bigquery",
+                                                    bigqueryDestination:{
+                                                        outputUri: "${BIGQUERY_TABLE}"
+
+                                                        }
+                                                    }
+
+                                    result: llm_response 
+    - return_result:
+        return: ${llm_response}   
+

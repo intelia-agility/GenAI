@@ -1,0 +1,85 @@
+{
+  "type": "OBJECT",
+  "properties": {
+    "Category": {
+      "type": "OBJECT",
+      "properties": {
+        "score": {
+          "type": "NUMBER"
+        },
+        "explanation": {
+          "type": "STRING"
+        }
+      },
+      "required": ["score", "explanation"]
+    },
+    "Detailed Description Of Events And Conversations": {
+      "type": "OBJECT",
+      "properties": {
+        "score": {
+          "type": "NUMBER"
+        },
+        "explanation": {
+          "type": "STRING"
+        }
+      },
+      "required": ["score", "explanation"]
+    },
+    "Brands, CompanyNames, and Logos": {
+      "type": "OBJECT",
+      "properties": {
+        "score": {
+          "type": "NUMBER"
+        },
+        "explanation": {
+          "type": "STRING"
+        }
+      },
+      "required": ["score", "explanation"]
+    },
+    "KeyLocations And Scenes": {
+      "type": "OBJECT",
+      "properties": {
+        "score": {
+          "type": "NUMBER"
+        },
+        "explanation": {
+          "type": "STRING"
+        }
+      },
+      "required": ["score", "explanation"]
+    },
+    "Key Themes": {
+      "type": "OBJECT",
+      "properties": {
+        "score": {
+          "type": "NUMBER"
+        },
+        "explanation": {
+          "type": "STRING"
+        }
+      },
+      "required": ["score", "explanation"]
+    },
+    "People Appearing And Mentioned": {
+      "type": "OBJECT",
+      "properties": {
+        "score": {
+          "type": "NUMBER"
+        },
+        "explanation": {
+          "type": "STRING"
+        }
+      },
+      "required": ["score", "explanation"]
+    }
+  },
+  "required": [
+    "Category",
+    "Detailed Description Of Events And Conversations",
+    "Brands, CompanyNames, and Logos",
+    "KeyLocations And Scenes",
+    "Key Themes",
+    "People Appearing And Mentioned"
+  ]
+}

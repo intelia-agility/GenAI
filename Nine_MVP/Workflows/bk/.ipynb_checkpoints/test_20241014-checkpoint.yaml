@@ -1,0 +1,142 @@
+### This is the workflow to extract multimodal embeddings from images
+
+main:
+  #params: [input]
+
+  steps:
+    # Step 1: Initialize variables
+    - init:
+        assign:
+            - PROJECT: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - LOCATION: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+            - PROJECT_NUMBER : ${sys.get_env("GOOGLE_CLOUD_PROJECT_NUMBER") }
+            - MM_MODEL: "multimodalembedding@001"
+            - MM_METHOD: "predict"
+            - MM_LLM_ENDPOINT: ${"https://" + LOCATION + "-aiplatform.googleapis.com" + "/v1/projects/" + PROJECT + "/locations/" + LOCATION + "/publishers/google/models/" + MM_MODEL+":"+MM_METHOD}
+ 
+            - LST_OUTPUT: []
+            - SOURCE_BUCKET: ${sys.get_env("VAR_SOURCE_BUCKET")}
+            - DESTINATION_BUCKET: ${sys.get_env("VAR_DESTINATION_BUCKET")}
+            - MEDIA_TYPES: ["image/jpeg","image/png"]   
+           
+            - SOURCE_IMAGE_FOLDER: "2024"           
+            - NO_OF_CONCURRENT_EXECUSTIONS: 10       
+            - SLEEP_BETWEEN_IMAGES: 120 # ${int(NO_OF_CONCURRENT_EXECUSTIONS) / int(API_VIDEO_PER_SECOND)}          
+            - MULTIMODAL_EMBEDDING_FOLDER: "image_multimodal_embedding_fldr_out" #main folder name 
+            - MULTIMODAL_EMBEDDING_FOLDER_JOB: ${"image_multimodal_embedding_"+  time.format( sys.now())} #this execution folder name
+            - OUTPUT_FILE_NAME: ${MULTIMODAL_EMBEDDING_FOLDER+"/"+MULTIMODAL_EMBEDDING_FOLDER_JOB+"/"+"image_multimodal_embeddings.json"}
+            - OUTPUT_DIRECTORY: ${"gs://"+DESTINATION_BUCKET+"/"+OUTPUT_FILE_NAME}  
+
+    # Step 2: List objects in the GCS bucket
+    - list_files:
+        call: googleapis.storage.v1.objects.list
+        args:
+          bucket: ${SOURCE_BUCKET}
+          prefix: ${SOURCE_IMAGE_FOLDER}
+        result: list_result
+
+    - log_list_files:
+            call: sys.log
+            args:
+                text: "List Of files Loaded From GCP Storage"
+
+  
+    # Step 3: Filter only videos    
+    - filter_medias:
+        steps:
+          - assignList:
+              assign:
+                  - media_types: ${MEDIA_TYPES}
+                  - filetered_files: []
+          - loopList:
+              for:
+                  value: item
+                  in: ${list_result.items}
+                  steps:
+                      - check_matching: 
+                          switch:                        
+                            - condition: ${item.contentType in media_types}  
+                              steps:
+                                        - add_matching_item_to_filetered_list:
+                                            assign:                                             
+                                                - image_uri: ${"gs://"+SOURCE_BUCKET+"/"+item.name} 
+                                                - image_uri_map: {"gcs_uri": "${image_uri}", "mime_type": "${item.contentType}"}                                    
+                                                - item: ${map.merge(item, image_uri_map)}                                               
+                                                - filetered_files: ${list.concat(filetered_files,item)}
+    
+  
+    - log_filter_medias:
+            call: sys.log
+            args:
+                text: ${"Medias Are Filtered-" + string(len(filetered_files))}
+
+    # Step 4: extract image embeddings                             
+    - extract_image_mm_embeddings:
+        parallel:
+            shared: [LST_OUTPUT]
+            concurrency_limit: ${NO_OF_CONCURRENT_EXECUSTIONS}
+            for:
+                value: item
+                in: ${filetered_files}
+                steps:
+
+                     #Step 5: Initialize vars
+                    - set_start_offeset:
+                        assign:                          
+                            - image_gcs_uri: ${item.gcs_uri}
+
+                    #Step 6: Call multimodal embedding
+                    - ask_llm:
+                            call: http.post
+                            args:
+                                url: ${MM_LLM_ENDPOINT}
+                                auth:
+                                    type: OAuth2
+                                body:
+                                    "instances": [
+                                                    {
+                                                        "image": {
+                                                         mimeType:  "${item.mime_type}",
+                                                        "gcsUri": "${item.gcs_uri}"  
+                                                        }
+
+                                                     } ]
+                            result: llm_response
+
+                    # Step 7: Add result to the output
+                    - add_to_output:
+                             assign:                                    
+                                - output:  {                                            
+                                            "gcs_uri": "${item.gcs_uri}",                                         
+                                             "llm_response": "${llm_response.body}"
+                                             }
+                                - LST_OUTPUT: ${list.concat(LST_OUTPUT,output)}
+
+                    - log_move_to_next_image:
+                            call: sys.log
+                            args:
+                               text: ${"Embedding Is Calculated For - " + image_gcs_uri} 
+
+                     # Step 8: We can not constantly call the enpoint, wait after each call
+                    - wait_between_images:
+                            call: sys.sleep
+                            args:
+                                seconds: ${SLEEP_BETWEEN_IMAGES}
+    
+    # Step 9: Write the output into GCS
+    - write_to_gcs:
+        call: http.post
+        args:
+            url: ${"https://storage.googleapis.com/upload/storage/v1/b/" + DESTINATION_BUCKET + "/o"}
+            auth:
+                type: OAuth2
+            query:
+                name: ${OUTPUT_FILE_NAME}
+            body:
+                 {"items": "${LST_OUTPUT}"}
+        
+    # Step 10: Return output
+    - return_result:
+        return: [ {"status": "SUCCESS", "output_content": "${LST_OUTPUT}", "output_directory": "${OUTPUT_DIRECTORY}" }]
+   
+ 
