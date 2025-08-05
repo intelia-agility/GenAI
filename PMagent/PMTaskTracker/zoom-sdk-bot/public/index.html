@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Zoom Bot</title>
+  <script src="https://source.zoom.us/3.2.0/lib/vendor/react.min.js"></script>
+  <script src="https://source.zoom.us/3.2.0/lib/vendor/react-dom.min.js"></script>
+  <script src="https://source.zoom.us/3.2.0/lib/vendor/redux.min.js"></script>
+  <script src="https://source.zoom.us/3.2.0/lib/vendor/redux-thunk.min.js"></script>
+  <script src="https://source.zoom.us/3.2.0/lib/vendor/jquery.min.js"></script>
+  <script src="https://source.zoom.us/zoom-meeting-3.2.0.min.js"></script>
+</head>
+<body>
+  <h1>Zoom Bot is Joining...</h1>
+  <script>
+    ZoomMtg.preLoadWasm();
+    ZoomMtg.prepareJssdk();
+
+    const meetingConfig = {
+      apiKey: 'YOUR_SDK_KEY',
+      meetingNumber: 'YOUR_MEETING_ID',
+      userName: 'Zoom Bot',
+      passWord: 'YOUR_MEETING_PASSCODE', // if needed
+      leaveUrl: 'http://localhost:3000',
+      role: 0 // 0 = attendee, 1 = host
+    };
+
+    fetch('/generateSignature').then(response => response.json()).then(data => {
+      ZoomMtg.init({
+        leaveUrl: meetingConfig.leaveUrl,
+        isSupportAV: true,
+        success: () => {
+          ZoomMtg.join({
+            signature: data.signature,
+            apiKey: meetingConfig.apiKey,
+            meetingNumber: meetingConfig.meetingNumber,
+            userName: meetingConfig.userName,
+            passWord: meetingConfig.passWord,
+            success: () => {
+              console.log('Bot joined meeting');
+            },
+            error: err => console.error(err)
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "displayName": "my-cloud-storage-batch-prediction-job",
+  "model": "publishers/google/models/gemini-1.5-flash-002",
+  "inputConfig": {
+    "instancesFormat": "jsonl",
+    "gcsSource": {
+      "uris" : "gs://nine_dry_run_showcase_assets/test/image_batch_request_fldr_image_batch_request_fldr20241030T023903797355Z_image_request_20241030024024_0.json"
+    }
+  },
+  "outputConfig": {
+    "predictionsFormat": "jsonl",
+    "gcsDestination": {
+        "outputUriPrefix": "gs://nine_dry_run_showcase_assets/test"
+      }
+  }
+}
