@@ -1,0 +1,31 @@
+project: >
+       nine-quality-test
+location: >
+       us-central1
+serper_api_key: > 
+        000000000000000000000000000
+raw_dailyupdate_bucket_name: >
+        pmtask_tracker
+raw_dailyupdate_folder_prefix: >
+        day-
+raw_dailyupdate_file_format: >
+        txt
+raw_dailyupdate_file_prefix: >
+        daily_update
+
+processed_dailyupdate_folder_prefix: >
+        processed-day-
+processed_dailyupdate_file_format: >
+        txt
+processed_dailyupdate_file_prefix: >
+        processed_daily_update
+
+dailyreport_bucket_name: >
+        pmtask_tracker
+dailyreport_folder_prefix: >
+        dailyreport-
+dailyreport_file_format: >
+        txt
+dailyreport_file_prefix: >
+        daily_report
+        

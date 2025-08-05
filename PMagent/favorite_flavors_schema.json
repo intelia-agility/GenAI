@@ -1,0 +1,12 @@
+[
+  {
+    "name": "email",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "favorite_flavor",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  }
+]
