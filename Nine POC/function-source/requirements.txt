@@ -1,0 +1,6 @@
+functions-framework==3.*
+google-cloud-aiplatform>=1.36.0
+google-cloud-storage
+google-cloud-vision
+tenacity
+tqdm
